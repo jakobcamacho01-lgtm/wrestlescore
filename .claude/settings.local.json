@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/jakobcamacho/**)",
+      "Read(//usr/local/bin/**)"
+    ]
+  }
+}

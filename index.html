@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>WrestleScore</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+<div class="shell">
+
+<!-- ══ LOGIN ══ -->
+<div class="screen active" id="s-login">
+  <div class="login-hero">
+    <div class="logo-mark"><svg viewBox="0 0 40 40"><path d="M20 4C11.2 4 4 11.2 4 20s7.2 16 16 16 16-7.2 16-16S28.8 4 20 4zm0 6c2.2 0 4 1.8 4 4s-1.8 4-4 4-4-1.8-4-4 1.8-4 4-4zm0 22.4c-4 0-7.6-2-9.6-5 .1-3.2 6.4-5 9.6-5 3.2 0 9.5 1.8 9.6 5-2 3-5.6 5-9.6 5z"/></svg></div>
+    <div class="lh1">WRESTLE<span>SCORE</span></div>
+    <div class="lsub">Film · Score · Analyze</div>
+  </div>
+  <div class="scroll-area" style="padding:20px 18px 24px;background:var(--black-2)">
+    <div class="tab-row">
+      <button class="tab-btn active" id="tl" onclick="switchTab('login')">Sign In</button>
+      <button class="tab-btn" id="ts" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+    <div id="login-form">
+      <div id="login-error" style="display:none;background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.3);border-radius:var(--rs);padding:8px 11px;font-size:12px;color:#ff6b6b;margin-bottom:10px"></div>
+      <div class="fg"><label>Email</label><input type="email" id="login-email" placeholder="coach@school.edu" onkeydown="if(event.key==='Enter')signIn()"/></div>
+      <div class="fg"><label>Password</label><input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')signIn()"/></div>
+      <button class="btn-p" id="login-btn" style="margin-bottom:10px" onclick="signIn()">SIGN IN</button>
+      <p style="text-align:center;font-size:12px;color:var(--text-muted);cursor:pointer;margin-bottom:12px" onclick="resetPassword()">Forgot password?</p>
+      <div class="divider"><span>or continue with</span></div>
+      <button style="width:100%;padding:11px;background:var(--black-3);color:var(--white);border:1px solid var(--border-light);border-radius:var(--rs);font-family:var(--font-b);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px" onclick="signInWithGoogle()">
+        <svg width="17" height="17" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+    <div id="signup-form" style="display:none">
+      <div id="signup-error" style="display:none;background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.3);border-radius:var(--rs);padding:8px 11px;font-size:12px;color:#ff6b6b;margin-bottom:10px"></div>
+      <div class="fg"><label>Full Name</label><input type="text" id="signup-name" placeholder="Coach Johnson" onkeydown="if(event.key==='Enter')signUp()"/></div>
+      <div class="fg"><label>Email</label><input type="email" id="signup-email" placeholder="coach@school.edu" onkeydown="if(event.key==='Enter')signUp()"/></div>
+      <div class="fg"><label>Password <span style="font-weight:400;color:var(--text-muted)">(min. 6 characters)</span></label><input type="password" id="signup-password" placeholder="Create a strong password" onkeydown="if(event.key==='Enter')signUp()"/></div>
+      <button class="btn-p" id="signup-btn" onclick="signUp()">CREATE ACCOUNT</button>
+      <div class="divider" style="margin-top:10px"><span>or continue with</span></div>
+      <button style="width:100%;padding:11px;background:var(--black-3);color:var(--white);border:1px solid var(--border-light);border-radius:var(--rs);font-family:var(--font-b);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px" onclick="signInWithGoogle()">
+        <svg width="17" height="17" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ══ -->
+<div class="screen" id="s-home">
+  <div class="app-hdr">
+    <div class="hdr-top-row">
+      <div class="logo-sm">WRESTLE<span>SCORE</span></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:var(--text-muted)">2025–26</span>
+        <div class="avatar-btn" id="user-avatar" onclick="handleAvatarClick()" title="Account">CJ</div>
+      </div>
+    </div>
+    <div class="athlete-tabs" id="dash-ath-tabs"></div>
+  </div>
+  <div class="scroll-area" id="dash-body"></div>
+  <div class="bnav">
+    <button class="ni active" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
+    <button class="ni" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
+    <button class="ni" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
+    <button class="ni" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+  </div>
+</div>
+
+<!-- ══ LIBRARY ══ -->
+<div class="screen" id="s-lib">
+  <div class="hdr">
+    <button class="back-btn" onclick="go('s-home')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></button>
+    <div class="hdr-title">Match Library</div>
+    <!-- + button opens Upload & Score -->
+    <button onclick="go('s-upload')" style="width:30px;height:30px;border-radius:50%;background:var(--green);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+  </div>
+  <div class="lib-controls">
+    <div class="search-bar"><svg viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="var(--text-muted)" stroke-width="2" fill="none" stroke-linecap="round"/></svg><input type="text" placeholder="Search matches…" oninput="filterLib(this.value)"/></div>
+    <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px">
+      <span style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);white-space:nowrap">Event</span>
+      <div class="filter-row" id="event-filters">
+        <button class="f-pill on" onclick="setLibFilter('event','All',this)">All</button>
+        <button class="f-pill" onclick="setLibFilter('event','Districts',this)">Districts</button>
+        <button class="f-pill" onclick="setLibFilter('event','Regionals',this)">Regionals</button>
+        <button class="f-pill" onclick="setLibFilter('event','State',this)">State</button>
+        <button class="f-pill" onclick="setLibFilter('event','Duals',this)">Duals</button>
+        <button class="f-pill" onclick="setLibFilter('event','Scrimmage',this)">Scrimmage</button>
+        <button class="f-pill" onclick="setLibFilter('event','Live',this)">Live</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);white-space:nowrap">Athlete</span>
+      <div class="filter-row" id="athlete-filters"></div>
+    </div>
+  </div>
+  <div class="scroll-area" id="lib-list"></div>
+  <div class="bnav">
+    <button class="ni" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
+    <button class="ni" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
+    <button class="ni active" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
+    <button class="ni" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+  </div>
+</div>
+
+<!-- ══ MATCH DETAIL / FILM ROOM ══ -->
+<div class="screen" id="s-match">
+  <div class="hdr" style="padding-bottom:0">
+    <button class="back-btn" onclick="go('s-lib')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></button>
+    <div class="hdr-title" id="md-title">Film Room</div>
+    <button style="padding:4px 10px;border-radius:20px;border:1px solid var(--green);background:none;color:var(--green);font-family:var(--font-d);font-size:11px;font-weight:700;cursor:pointer" onclick="exportMatchStats()">Export</button>
+  </div>
+  <div class="filmroom">
+    <div class="video-section paused" id="video-section">
+      <div class="video-placeholder" id="vid-placeholder">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="rgba(255,255,255,.18)"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" fill="rgba(255,255,255,.18)"/></svg>
+        <p id="vid-match-label">Match Film</p>
+        <p style="font-size:10px;color:rgba(255,255,255,.25)">Video will appear here from Library</p>
+      </div>
+      <div class="vid-overlay" id="vid-overlay">
+        <button class="vid-sm-btn" onclick="seekRel(-10)"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6H4c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8z"/></svg></button>
+        <button class="vid-play-btn" onclick="togglePlay()"><svg id="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="vid-sm-btn" onclick="seekRel(10)"><svg viewBox="0 0 24 24"><path d="M12 5V1l5 5-5 5V7c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6h2c0 4.4-3.6 8-8 8s-8-3.6-8-8 3.6-8 8-8z"/></svg></button>
+      </div>
+      <button class="fullscreen-btn" onclick="toggleFullscreen()"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="vid-progress">
+      <div class="progress-bar-wrap" id="progress-bar" onclick="seekTo(event)"><div class="progress-fill" id="progress-fill"></div><div class="progress-handle" id="progress-handle"></div></div>
+      <div class="time-row"><span id="time-cur">0:00</span><span id="time-total">0:00</span></div>
+    </div>
+    <div class="md-hero">
+      <div class="md-matchup">
+        <div><div class="md-wname" id="md-w1">Wrestler</div><div style="font-size:10px;color:var(--text-muted)">Home</div></div>
+        <div style="text-align:center">
+          <div style="font-family:var(--font-d);font-size:10px;color:var(--text-muted)">VS</div>
+          <div style="display:flex;align-items:baseline;gap:4px;justify-content:center">
+            <div class="md-score-big" id="md-s1" style="color:var(--green)">0</div>
+            <div style="font-family:var(--font-d);font-size:16px;color:var(--text-muted)">–</div>
+            <div class="md-score-big" id="md-s2" style="color:var(--text-secondary)">0</div>
+          </div>
+        </div>
+        <div style="text-align:right"><div class="md-wname" id="md-w2">Opponent</div><div style="font-size:10px;color:var(--text-muted)">Away</div></div>
+      </div>
+      <div style="display:flex;gap:4px;margin-top:9px;flex-wrap:wrap">
+        <div class="md-chip" id="md-wt">133 lbs</div>
+        <div class="md-chip" id="md-ev">Districts</div>
+        <div class="md-chip" id="md-dt">—</div>
+        <div class="md-chip" id="md-res">—</div>
+      </div>
+    </div>
+    <div class="md-tabs">
+      <button class="md-tab active" onclick="showTab('tc-stats',this)">Statistics</button>
+      <button class="md-tab" onclick="showTab('tc-summary',this)">Summary</button>
+      <button class="md-tab" onclick="showTab('tc-clips',this)">Clips</button>
+    </div>
+    <div class="scroll-area">
+      <!-- STATISTICS TAB -->
+      <div class="tab-content active" id="tc-stats">
+        <div style="background:rgba(29,185,84,.07);border:1px solid rgba(29,185,84,.18);border-radius:var(--rs);margin:9px 12px;padding:7px 11px;display:flex;align-items:center;gap:6px">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="var(--green)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span style="font-size:11px;color:var(--text-secondary)">Tap +/− to log stats, then Save.</span>
+        </div>
+        <div class="stat-sec-hdr" style="border-top:none"><div class="stat-sec-title">Neutral</div><div class="stat-sec-badge badge-neutral">Shots</div></div>
+        <div class="sub-hdr ours">Our Wrestler</div>
+        <div class="stat-row"><div class="stat-label">Single leg attempt</div><div class="counter" id="c-sl-att"><button class="ctr-btn minus" onclick="dec('sl-att')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('sl-att')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Single leg score</div><div class="counter" id="c-sl-sc"><button class="ctr-btn minus" onclick="dec('sl-sc')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('sl-sc')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">High crotch attempt</div><div class="counter" id="c-hc-att"><button class="ctr-btn minus" onclick="dec('hc-att')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('hc-att')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Double leg attempt</div><div class="counter" id="c-dl-att"><button class="ctr-btn minus" onclick="dec('dl-att')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('dl-att')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Double leg score</div><div class="counter" id="c-dl-sc"><button class="ctr-btn minus" onclick="dec('dl-sc')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('dl-sc')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Other attempt</div><div class="counter" id="c-oth-att"><button class="ctr-btn minus" onclick="dec('oth-att')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('oth-att')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Other score</div><div class="counter" id="c-oth-sc"><button class="ctr-btn minus" onclick="dec('oth-sc')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('oth-sc')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Front head lock</div><div class="counter" id="c-fhl"><button class="ctr-btn minus" onclick="dec('fhl')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('fhl')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Front head lock score</div><div class="counter" id="c-fhl-sc"><button class="ctr-btn minus" onclick="dec('fhl-sc')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('fhl-sc')">+</button></div></div>
+        <div class="sub-hdr opp">Opponent</div>
+        <div class="stat-row"><div class="stat-label opp">Opp single leg attempt</div><div class="counter" id="c-osl-att"><button class="ctr-btn minus" onclick="dec('osl-att')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('osl-att')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label opp">Opp single leg score</div><div class="counter" id="c-osl-sc"><button class="ctr-btn minus" onclick="dec('osl-sc')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('osl-sc')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label opp">Opp high crotch attempt</div><div class="counter" id="c-ohc-att"><button class="ctr-btn minus" onclick="dec('ohc-att')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('ohc-att')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label opp">Opp double leg attempt</div><div class="counter" id="c-odl-att"><button class="ctr-btn minus" onclick="dec('odl-att')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('odl-att')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label opp">Opp double leg score</div><div class="counter" id="c-odl-sc"><button class="ctr-btn minus" onclick="dec('odl-sc')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('odl-sc')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label opp">Opp other attempt</div><div class="counter" id="c-ooa"><button class="ctr-btn minus" onclick="dec('ooa')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('ooa')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label opp">Opp other score</div><div class="counter" id="c-oos"><button class="ctr-btn minus" onclick="dec('oos')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('oos')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label opp">Opp front head lock</div><div class="counter" id="c-ofhl"><button class="ctr-btn minus" onclick="dec('ofhl')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('ofhl')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label opp">Opp FHL score</div><div class="counter" id="c-ofhl-sc"><button class="ctr-btn minus" onclick="dec('ofhl-sc')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('ofhl-sc')">+</button></div></div>
+        <div class="stat-sec-hdr"><div class="stat-sec-title">Bottom</div><div class="stat-sec-badge badge-bottom">Ref Position</div></div>
+        <div class="stat-row"><div class="stat-label">Escapes</div><div class="counter" id="c-esc"><button class="ctr-btn minus" onclick="dec('esc')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('esc')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Reversals</div><div class="counter" id="c-rev"><button class="ctr-btn minus" onclick="dec('rev')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('rev')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Times broken down</div><div class="counter" id="c-tbd"><button class="ctr-btn minus" onclick="dec('tbd')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('tbd')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Standups</div><div class="counter" id="c-su"><button class="ctr-btn minus" onclick="dec('su')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('su')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Mat returns (bottom)</div><div class="counter" id="c-mr"><button class="ctr-btn minus" onclick="dec('mr')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('mr')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Near falls given up</div><div class="counter" id="c-nfg"><button class="ctr-btn minus" onclick="dec('nfg')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('nfg')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Riding time (bottom)</div><div class="counter" id="c-rtb"><button class="ctr-btn minus" onclick="dec('rtb')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('rtb')">+</button></div></div>
+        <div class="stat-sec-hdr"><div class="stat-sec-title">Top</div><div class="stat-sec-badge badge-top">Ride & Control</div></div>
+        <div class="stat-row"><div class="stat-label">Breakdowns</div><div class="counter" id="c-bd"><button class="ctr-btn minus" onclick="dec('bd')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('bd')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Near fall attempts</div><div class="counter" id="c-nfa"><button class="ctr-btn minus" onclick="dec('nfa')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('nfa')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Near fall sets</div><div class="counter" id="c-nfs"><button class="ctr-btn minus" onclick="dec('nfs')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('nfs')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Mat returns</div><div class="counter" id="c-mrt"><button class="ctr-btn minus" onclick="dec('mrt')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('mrt')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Opponent escapes</div><div class="counter" id="c-oe"><button class="ctr-btn minus" onclick="dec('oe')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('oe')">+</button></div></div>
+        <div class="stat-row"><div class="stat-label">Opponent reversals</div><div class="counter" id="c-or"><button class="ctr-btn minus" onclick="dec('or')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('or')">+</button></div></div>
+        <div class="stat-row" style="border-bottom:none"><div class="stat-label">Riding time (top)</div><div class="counter" id="c-rtt"><button class="ctr-btn minus" onclick="dec('rtt')">−</button><span class="ctr-val">0</span><button class="ctr-btn plus" onclick="inc('rtt')">+</button></div></div>
+        <div style="padding:11px 13px"><button class="btn-p" onclick="saveMatchStats()">SAVE STATS</button></div>
+      </div>
+
+      <!-- SUMMARY TAB -->
+      <div class="tab-content" id="tc-summary">
+        <div style="padding:11px 13px 4px"><div class="sec-lbl">Neutral</div></div>
+        <div class="summary-grid">
+          <div class="s-card"><div class="s-num" id="su-eff">0%</div><div class="s-lbl">Shot eff.</div></div>
+          <div class="s-card"><div class="s-num" id="su-shots">0</div><div class="s-lbl">Shots</div></div>
+          <div class="s-card"><div class="s-num" id="su-scores">0</div><div class="s-lbl">Takedowns</div></div>
+        </div>
+        <div style="padding:4px 13px"><div class="sec-lbl">Bottom</div></div>
+        <div class="summary-grid">
+          <div class="s-card"><div class="s-num" id="su-esc">0</div><div class="s-lbl">Escapes</div></div>
+          <div class="s-card"><div class="s-num" id="su-rev">0</div><div class="s-lbl">Reversals</div></div>
+          <div class="s-card"><div class="s-num" style="color:var(--red)" id="su-nfg">0</div><div class="s-lbl">NF Given</div></div>
+        </div>
+        <div style="padding:4px 13px"><div class="sec-lbl">Top</div></div>
+        <div class="summary-grid">
+          <div class="s-card"><div class="s-num" id="su-bd">0</div><div class="s-lbl">Breakdowns</div></div>
+          <div class="s-card"><div class="s-num" id="su-nfa">0</div><div class="s-lbl">NF Att.</div></div>
+          <div class="s-card"><div class="s-num" id="su-nfs">0</div><div class="s-lbl">NF Sets</div></div>
+        </div>
+        <div style="padding:6px 13px 5px"><div class="sec-lbl">Coaching Notes</div></div>
+        <div class="notes-area" style="padding:0 13px 13px">
+          <textarea id="match-notes-input" rows="4" placeholder="Coaching observations…" oninput="saveMatchNotes(this.value)"></textarea>
+        </div>
+      </div>
+
+      <!-- CLIPS TAB -->
+      <div class="tab-content" id="tc-clips">
+        <div style="padding:11px 13px">
+          <div class="sec-lbl" style="margin-bottom:9px">Bookmarked Moments</div>
+          <div id="clips-list"></div>
+          <button style="width:100%;padding:9px;border:1px dashed var(--border-light);border-radius:var(--rs);background:none;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;margin-top:4px" onclick="addBookmark()">+ Bookmark Current Position</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LIVE FILM & SCORE ══ -->
+<div class="screen" id="s-live">
+  <div class="hdr">
+    <button class="back-btn" onclick="go('s-home')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></button>
+    <div class="hdr-title">Live Scoring</div>
+    <div id="rec-b" style="display:none;align-items:center;gap:4px;background:var(--green);border-radius:20px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--black)">
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--black);animation:pulse 1s infinite"></div>LIVE
+    </div>
+  </div>
+
+  <!-- Athlete + event selectors -->
+  <div style="background:var(--black);border-bottom:1px solid var(--border);padding:8px 13px;display:flex;gap:8px;flex-shrink:0">
+    <div style="flex:1">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:3px">Wrestler</div>
+      <select id="live-athlete" style="width:100%;background:var(--black-3);border:1px solid var(--border-light);border-radius:var(--rs);padding:6px 9px;font-size:12px;color:var(--white);font-family:var(--font-b);outline:none;-webkit-appearance:none"></select>
+    </div>
+    <div style="flex:1">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:3px">Event</div>
+      <input id="live-event" type="text" value="Live Match" style="width:100%;background:var(--black-3);border:1px solid var(--border-light);border-radius:var(--rs);padding:6px 9px;font-size:12px;color:var(--white);font-family:var(--font-b);outline:none"/>
+    </div>
+  </div>
+
+  <div class="period-bar">
+    <div id="live-period-lbl" class="period-lbl">PERIOD 1</div>
+    <div style="display:flex;gap:4px">
+      <button class="f-pill on" style="padding:4px 8px;font-size:10px" onclick="setLivePeriod(1,this)">P1</button>
+      <button class="f-pill" style="padding:4px 8px;font-size:10px" onclick="setLivePeriod(2,this)">P2</button>
+      <button class="f-pill" style="padding:4px 8px;font-size:10px" onclick="setLivePeriod(3,this)">P3</button>
+      <button class="f-pill" style="padding:4px 8px;font-size:10px" onclick="setLivePeriod(0,this)">OT</button>
+    </div>
+  </div>
+
+  <div class="live-score-bar">
+    <div style="text-align:center">
+      <input id="nm-r" value="Home" style="background:none;border:none;border-bottom:1px solid var(--border-light);color:var(--white);font-family:var(--font-d);font-size:12px;font-weight:700;text-align:center;outline:none;width:100%;padding:2px"/>
+      <div class="ls-score" id="sc-r" style="color:var(--red)">0</div>
+    </div>
+    <div>
+      <div style="font-family:var(--font-d);font-size:12px;color:var(--text-muted);text-align:center">VS</div>
+      <button onclick="undoLastScore()" style="display:block;margin:4px auto 0;padding:3px 7px;border-radius:10px;border:1px solid var(--border-light);background:none;font-size:10px;color:var(--text-muted);cursor:pointer">↩ Undo</button>
+    </div>
+    <div style="text-align:center">
+      <input id="nm-b" value="Opponent" style="background:none;border:none;border-bottom:1px solid var(--border-light);color:var(--white);font-family:var(--font-d);font-size:12px;font-weight:700;text-align:center;outline:none;width:100%;padding:2px"/>
+      <div class="ls-score" id="sc-b" style="color:var(--blue)">0</div>
+    </div>
+  </div>
+
+  <div class="scroll-area" style="background:var(--black-2)">
+    <div style="padding:6px 12px 3px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);text-align:center">Home (left) · Opponent (right)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px 12px">
+      <button class="la-btn red-t" onclick="liveScore('r',2)">Takedown<span class="pts">+2</span></button>
+      <button class="la-btn blue-t" onclick="liveScore('b',2)">Takedown<span class="pts">+2</span></button>
+      <button class="la-btn red-t" onclick="liveScore('r',1)">Escape<span class="pts">+1</span></button>
+      <button class="la-btn blue-t" onclick="liveScore('b',1)">Escape<span class="pts">+1</span></button>
+      <button class="la-btn red-t" onclick="liveScore('r',2)">Reversal<span class="pts">+2</span></button>
+      <button class="la-btn blue-t" onclick="liveScore('b',2)">Reversal<span class="pts">+2</span></button>
+      <button class="la-btn red-t" onclick="liveScore('r',2)">Near Fall 2<span class="pts">+2</span></button>
+      <button class="la-btn blue-t" onclick="liveScore('b',2)">Near Fall 2<span class="pts">+2</span></button>
+      <button class="la-btn red-t" onclick="liveScore('r',3)">Near Fall 3<span class="pts">+3</span></button>
+      <button class="la-btn blue-t" onclick="liveScore('b',3)">Near Fall 3<span class="pts">+3</span></button>
+      <button class="la-btn pen" onclick="liveScore('b',1)">Stall → Opp<span class="pts">+1</span></button>
+      <button class="la-btn pen" onclick="liveScore('r',1)">Stall → Home<span class="pts">+1</span></button>
+      <button class="la-btn pin-btn" style="grid-column:1/3;padding:11px" onclick="pinLiveMatch('home')">PIN — Home Wins</button>
+      <button class="la-btn" style="grid-column:1/3;padding:11px;background:rgba(93,173,226,.12);color:#7EC8E3;border:1px solid rgba(93,173,226,.25)" onclick="pinLiveMatch('opp')">PIN — Opponent Wins</button>
+    </div>
+    <div style="padding:0 12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <button class="btn-o" onclick="saveLiveMatch(false)">Save Match</button>
+      <button class="btn-p" onclick="saveLiveMatch(true)">Finalize →</button>
+    </div>
+  </div>
+
+  <div class="bnav">
+    <button class="ni" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
+    <button class="ni active" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
+    <button class="ni" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
+    <button class="ni" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+  </div>
+</div>
+
+<!-- ══ UPLOAD & SCORE ══ -->
+<div class="screen" id="s-upload">
+  <div class="hdr">
+    <button class="back-btn" onclick="go('s-lib')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></button>
+    <div class="hdr-title">Add Match</div>
+  </div>
+  <div class="scroll-area" style="padding:16px 16px 24px;background:var(--black-2)">
+    <div class="sec-lbl">Select Video (Optional)</div>
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" accept="video/*" id="video-file-input" onchange="handleVideoUpload(this)"/>
+      <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="var(--green)" stroke-width="1.5" class="upload-zone-icon"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <h3>Tap to Browse Videos</h3>
+      <p>Select from your camera roll or device<br>Supports MP4, MOV, AVI, M4V</p>
+    </div>
+    <div class="video-preview-wrap" id="upload-preview" style="display:none">
+      <video id="upload-video-preview" controls playsinline style="width:100%;max-height:200px;display:block;background:#000"></video>
+      <div class="video-preview-label" id="upload-video-name">video.mp4</div>
+      <button onclick="clearUploadedVideo()" style="position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">×</button>
+    </div>
+    <div class="sec-lbl" style="margin-top:4px">Match Details</div>
+    <div class="fg"><label>Athlete</label><select id="upload-athlete"><option value="">Select athlete…</option></select></div>
+    <div class="fg"><label>Opponent Name</label><input type="text" id="upload-opp" placeholder="e.g. Ryan Morrison"/></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg" style="margin:0"><label>Weight Class</label><select id="upload-weight"><option>106</option><option>113</option><option>120</option><option>126</option><option selected>133</option><option>138</option><option>144</option><option>150</option><option>157</option><option>165</option><option>175</option><option>190</option><option>215</option><option>285</option></select></div>
+      <div class="fg" style="margin:0"><label>Score (W score – L score)</label>
+        <div style="display:flex;gap:4px">
+          <input type="number" id="upload-s1" placeholder="0" min="0" style="width:100%;padding:10px 8px;border:1px solid var(--border-light);border-radius:var(--rs);font-size:14px;color:var(--white);background:var(--black-3);outline:none;text-align:center"/>
+          <span style="display:flex;align-items:center;color:var(--text-muted);font-weight:700">–</span>
+          <input type="number" id="upload-s2" placeholder="0" min="0" style="width:100%;padding:10px 8px;border:1px solid var(--border-light);border-radius:var(--rs);font-size:14px;color:var(--white);background:var(--black-3);outline:none;text-align:center"/>
+        </div>
+      </div>
+    </div>
+    <div class="fg"><label>Result</label><select id="upload-result"><option value="W">Win</option><option value="L">Loss</option><option value="D">Draw</option></select></div>
+    <div class="fg"><label>Competition / Tournament</label><input type="text" id="upload-event" placeholder="e.g. District Championships"/></div>
+    <div class="fg"><label>Date</label><input type="date" id="upload-date"/></div>
+    <button class="btn-p" onclick="saveUploadedMatch()">SAVE TO LIBRARY</button>
+  </div>
+</div>
+
+<!-- ══ ROSTER ══ -->
+<div class="screen" id="s-roster">
+  <div class="hdr">
+    <button class="back-btn" onclick="go('s-home')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></button>
+    <div class="hdr-title">Athlete Roster</div>
+    <button onclick="openAddAthlete()" style="width:30px;height:30px;border-radius:50%;background:var(--green);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+  </div>
+  <div style="padding:10px 14px 7px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--black-2)">
+    <div class="search-bar"><svg viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="var(--text-muted)" stroke-width="2" fill="none" stroke-linecap="round"/></svg><input type="text" placeholder="Search athletes…" oninput="renderRoster(this.value)"/></div>
+    <div style="display:flex;gap:5px" class="filter-row">
+      <button class="f-pill on" onclick="setRosterFilter('All',this)">All</button>
+      <button class="f-pill" onclick="setRosterFilter('Active',this)">Active</button>
+      <button class="f-pill" onclick="setRosterFilter('Inactive',this)">Inactive</button>
+    </div>
+  </div>
+  <div class="scroll-area" id="roster-list"></div>
+  <div class="bnav">
+    <button class="ni" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
+    <button class="ni" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
+    <button class="ni" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
+    <button class="ni active" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+  </div>
+</div>
+
+</div><!-- end shell -->
+
+<!-- ADD/EDIT ATHLETE MODAL -->
+<div class="modal-overlay hidden" id="add-modal" onclick="closeModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div style="font-family:var(--font-d);font-size:19px;font-weight:700;color:var(--white);margin-bottom:14px" id="modal-title-text">Add Athlete</div>
+    <div class="fg"><label>Full Name</label><input type="text" id="ath-name" placeholder="e.g. Tyler Johnson"/></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg" style="margin:0"><label>Weight Class</label><select id="ath-weight"><option>106</option><option>113</option><option>120</option><option>126</option><option selected>133</option><option>138</option><option>144</option><option>150</option><option>157</option><option>165</option><option>175</option><option>190</option><option>215</option><option>285</option></select></div>
+      <div class="fg" style="margin:0"><label>Grade</label><select id="ath-grade"><option>9th</option><option>10th</option><option>11th</option><option selected>12th</option></select></div>
+    </div>
+    <div class="fg" style="margin-top:12px"><label>Status</label><select id="ath-status"><option>Active</option><option>Inactive</option></select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+      <button class="btn-o" onclick="closeModal()">Cancel</button>
+      <button class="btn-p" onclick="saveAthlete()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast-el"></div>
+
+<!-- Firebase SDK (compat — no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="./src/firebase-config.js"></script>
+<script>
+  if (typeof FIREBASE_CONFIGURED !== 'undefined' && FIREBASE_CONFIGURED) {
+    firebase.initializeApp(firebaseConfig);
+  }
+</script>
+<!-- App -->
+<script src="./src/main.js"></script>
+</body>
+</html>
