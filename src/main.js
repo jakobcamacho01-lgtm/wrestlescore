@@ -720,7 +720,7 @@ function saveLiveMatch(finalize) {
   const ev = document.getElementById('live-event').value.trim() || 'Live Match';
   const s1 = lScores.r;
   const s2 = lScores.b;
-  const res = s1 > s2 ? 'W' : s1 < s2 ? 'L' : 'D';
+  const res = s1 >= s2 ? 'W' : 'L';
   const wt = ath ? ath.weight + ' lbs' : '133 lbs';
   const dt = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL: null, stats: {}, notes: '', bookmarks: [] });

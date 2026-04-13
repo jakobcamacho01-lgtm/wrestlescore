@@ -560,8 +560,8 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
   <div class="scroll-area" style="background:var(--black-2)">
     <div style="padding:6px 12px 3px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);text-align:center">Home (left) · Opponent (right)</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px 12px">
-      <button class="la-btn red-t" onclick="liveScore('r',2)">Takedown<span class="pts">+2</span></button>
-      <button class="la-btn blue-t" onclick="liveScore('b',2)">Takedown<span class="pts">+2</span></button>
+      <button class="la-btn red-t" onclick="liveScore('r',3)">Takedown<span class="pts">+3</span></button>
+      <button class="la-btn blue-t" onclick="liveScore('b',3)">Takedown<span class="pts">+3</span></button>
       <button class="la-btn red-t" onclick="liveScore('r',1)">Escape<span class="pts">+1</span></button>
       <button class="la-btn blue-t" onclick="liveScore('b',1)">Escape<span class="pts">+1</span></button>
       <button class="la-btn red-t" onclick="liveScore('r',2)">Reversal<span class="pts">+2</span></button>
@@ -570,8 +570,10 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
       <button class="la-btn blue-t" onclick="liveScore('b',2)">Near Fall 2<span class="pts">+2</span></button>
       <button class="la-btn red-t" onclick="liveScore('r',3)">Near Fall 3<span class="pts">+3</span></button>
       <button class="la-btn blue-t" onclick="liveScore('b',3)">Near Fall 3<span class="pts">+3</span></button>
-      <button class="la-btn pen" onclick="liveScore('b',1)">Stall → Opp<span class="pts">+1</span></button>
-      <button class="la-btn pen" onclick="liveScore('r',1)">Stall → Home<span class="pts">+1</span></button>
+      <button class="la-btn red-t" onclick="liveScore('r',4)">Near Fall 4<span class="pts">+4</span></button>
+      <button class="la-btn blue-t" onclick="liveScore('b',4)">Near Fall 4<span class="pts">+4</span></button>
+      <button class="la-btn pen" onclick="liveScore('b',1)">Stall & Other → Opp<span class="pts">+1</span></button>
+      <button class="la-btn pen" onclick="liveScore('r',1)">Stall & Other → Home<span class="pts">+1</span></button>
       <button class="la-btn pin-btn" style="grid-column:1/3;padding:11px" onclick="pinLiveMatch('home')">PIN — Home Wins</button>
       <button class="la-btn" style="grid-column:1/3;padding:11px;background:rgba(93,173,226,.12);color:#7EC8E3;border:1px solid rgba(93,173,226,.25)" onclick="pinLiveMatch('opp')">PIN — Opponent Wins</button>
     </div>
@@ -621,7 +623,7 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
         </div>
       </div>
     </div>
-    <div class="fg"><label>Result</label><select id="upload-result"><option value="W">Win</option><option value="L">Loss</option><option value="D">Draw</option></select></div>
+    <div class="fg"><label>Result</label><select id="upload-result"><option value="W">Win</option><option value="L">Loss</option></select></div>
     <div class="fg"><label>Competition / Tournament</label><input type="text" id="upload-event" placeholder="e.g. District Championships"/></div>
     <div class="fg"><label>Date</label><input type="date" id="upload-date"/></div>
     <button class="btn-p" onclick="saveUploadedMatch()">SAVE TO LIBRARY</button>
@@ -1419,7 +1421,7 @@ function saveLiveMatch(finalize) {
   const ev = document.getElementById('live-event').value.trim() || 'Live Match';
   const s1 = lScores.r;
   const s2 = lScores.b;
-  const res = s1 > s2 ? 'W' : s1 < s2 ? 'L' : 'D';
+  const res = s1 >= s2 ? 'W' : 'L';
   const wt = ath ? ath.weight + ' lbs' : '133 lbs';
   const dt = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL: null, stats: {}, notes: '', bookmarks: [] });
