@@ -239,7 +239,11 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
 .pin-btn:hover,.pin-btn:active{background:var(--green);color:var(--black)}
 .period-bar{background:var(--black);padding:7px 13px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;border-bottom:1px solid var(--border);border-top:1px solid var(--border)}
 .period-lbl{font-family:var(--font-d);font-size:13px;font-weight:700;color:var(--green)}
-.live-camera-area{background:#000;height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative;flex-shrink:0}
+.live-camera-area{background:#000;height:190px;position:relative;flex-shrink:0;overflow:hidden}
+.live-camera-area video{width:100%;height:100%;object-fit:cover;display:block}
+.cam-open-wrap{background:var(--black);padding:7px 13px;flex-shrink:0;border-bottom:1px solid var(--border)}
+#cam-btn{width:100%;padding:9px;border-radius:var(--rs);border:1.5px solid var(--green);background:rgba(29,185,84,.1);color:var(--green);font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;-webkit-tap-highlight-color:transparent;transition:all .15s}
+#cam-btn:active{background:rgba(29,185,84,.25)}
 
 /* ROSTER */
 .roster-item{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--border)}
@@ -524,6 +528,22 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
     <div id="rec-b" style="display:none;align-items:center;gap:4px;background:var(--green);border-radius:20px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--black)">
       <div style="width:6px;height:6px;border-radius:50%;background:var(--black);animation:pulse 1s infinite"></div>LIVE
     </div>
+  </div>
+
+  <!-- Camera Preview (hidden until camera opens) -->
+  <div class="live-camera-area" id="cam-preview-area" style="display:none">
+    <video id="cam-preview-video" muted autoplay playsinline></video>
+    <div style="position:absolute;top:7px;right:7px;display:flex;gap:5px;z-index:2">
+      <button id="rec-toggle-btn" onclick="toggleCameraRecording()" style="padding:5px 12px;border-radius:20px;border:1.5px solid rgba(231,76,60,.5);background:rgba(231,76,60,.15);color:#F1948A;font-size:11px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent">⏺ REC</button>
+      <button onclick="closeCamera()" style="width:27px;height:27px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.6);color:white;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">✕</button>
+    </div>
+    <div id="rec-duration" style="display:none;position:absolute;bottom:7px;left:9px;font-size:12px;font-weight:700;color:#ff6b6b;text-shadow:0 1px 4px rgba(0,0,0,.9)">● 0:00</div>
+    <div id="rec-saved-badge" style="display:none;position:absolute;bottom:7px;right:9px;font-size:10px;font-weight:700;color:var(--green);background:rgba(0,0,0,.6);padding:2px 6px;border-radius:8px">✓ Video saved</div>
+  </div>
+
+  <!-- Open Camera button -->
+  <div class="cam-open-wrap">
+    <button id="cam-btn" onclick="openCamera()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>📹 Tap to Film &amp; Score Live</button>
   </div>
 
   <!-- Athlete + event selectors -->
@@ -1384,16 +1404,115 @@ function saveMatchNotes(notes) {
   saveData();
 }
 
-/* ── LIVE SCORING ── */
-let rec = false;
-function toggleRec() {
-  rec = !rec;
-  document.getElementById('rec-b').style.display = rec ? 'flex' : 'none';
-  document.getElementById('cam-btn').style.background = rec ? '#333' : 'var(--green)';
-  document.getElementById('cam-btn').style.borderColor = rec ? '#555' : 'var(--green)';
-  toast(rec ? 'Recording started — score below' : 'Recording stopped');
+/* ── CAMERA RECORDING ── */
+let mediaStream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let liveVideoBlobURL = null;
+let recTimerInterval = null;
+let recSeconds = 0;
+let wakeLock = null;
+
+async function openCamera() {
+  if (mediaStream) return;
+  const btn = document.getElementById('cam-btn');
+  if (btn) { btn.innerHTML = '⏳ Opening camera…'; btn.disabled = true; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true
+    });
+    mediaStream = stream;
+    const vid = document.getElementById('cam-preview-video');
+    if (vid) { vid.srcObject = stream; }
+    const area = document.getElementById('cam-preview-area');
+    if (area) area.style.display = 'block';
+    if (btn) btn.style.display = 'none';
+    try {
+      if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+    } catch (e) {}
+    toast('Camera ready — tap ⏺ REC to start recording');
+  } catch (err) {
+    if (btn) { btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>📹 Tap to Film & Score Live'; btn.disabled = false; }
+    toast(err.name === 'NotAllowedError' ? 'Camera permission denied' : 'Could not access camera');
+  }
 }
 
+function closeCamera() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  if (wakeLock) { try { wakeLock.release(); } catch(e){} wakeLock = null; }
+  clearInterval(recTimerInterval); recTimerInterval = null; recSeconds = 0;
+  const area = document.getElementById('cam-preview-area');
+  if (area) area.style.display = 'none';
+  const btn = document.getElementById('cam-btn');
+  if (btn) { btn.style.display = 'flex'; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>📹 Tap to Film & Score Live'; btn.disabled = false; }
+  _resetRecUI();
+}
+
+function _resetRecUI() {
+  const recBtn = document.getElementById('rec-toggle-btn');
+  if (recBtn) { recBtn.textContent = '⏺ REC'; recBtn.style.background = 'rgba(231,76,60,.15)'; recBtn.style.borderColor = 'rgba(231,76,60,.5)'; recBtn.style.color = '#F1948A'; }
+  const dur = document.getElementById('rec-duration');
+  if (dur) dur.style.display = 'none';
+  const rb = document.getElementById('rec-b');
+  if (rb) rb.style.display = 'none';
+}
+
+function toggleCameraRecording() {
+  if (!mediaStream) { openCamera(); return; }
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    stopCameraRecording();
+  } else {
+    startCameraRecording();
+  }
+}
+
+function startCameraRecording() {
+  if (!mediaStream) return;
+  recordedChunks = [];
+  if (liveVideoBlobURL) { URL.revokeObjectURL(liveVideoBlobURL); liveVideoBlobURL = null; }
+  const types = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4',''];
+  const mimeType = types.find(t => !t || MediaRecorder.isTypeSupported(t)) || '';
+  try { mediaRecorder = new MediaRecorder(mediaStream, mimeType ? { mimeType } : {}); }
+  catch (e) { mediaRecorder = new MediaRecorder(mediaStream); }
+  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    if (recordedChunks.length) {
+      const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+      if (liveVideoBlobURL) URL.revokeObjectURL(liveVideoBlobURL);
+      liveVideoBlobURL = URL.createObjectURL(blob);
+      const badge = document.getElementById('rec-saved-badge');
+      if (badge) badge.style.display = 'block';
+    }
+  };
+  mediaRecorder.start(1000);
+  const recBtn = document.getElementById('rec-toggle-btn');
+  if (recBtn) { recBtn.textContent = '⏹ STOP'; recBtn.style.background = '#c0392b'; recBtn.style.borderColor = '#c0392b'; recBtn.style.color = '#fff'; }
+  const rb = document.getElementById('rec-b');
+  if (rb) rb.style.display = 'flex';
+  const dur = document.getElementById('rec-duration');
+  if (dur) { dur.style.display = 'block'; dur.textContent = '● 0:00'; }
+  const badge = document.getElementById('rec-saved-badge');
+  if (badge) badge.style.display = 'none';
+  recSeconds = 0;
+  recTimerInterval = setInterval(() => {
+    recSeconds++;
+    const m = Math.floor(recSeconds / 60), s = recSeconds % 60;
+    const d = document.getElementById('rec-duration');
+    if (d) d.textContent = '● ' + m + ':' + (s < 10 ? '0' : '') + s;
+  }, 1000);
+  toast('● Recording — score below!');
+}
+
+function stopCameraRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  clearInterval(recTimerInterval); recTimerInterval = null;
+  _resetRecUI();
+  toast('Recording stopped — video attached to match');
+}
+
+/* ── LIVE SCORING ── */
 let lScores = { r: 0, b: 0 };
 let scoreHistory = [];
 
@@ -1430,10 +1549,13 @@ function saveLiveMatch(finalize) {
   const res = s1 >= s2 ? 'W' : 'L';
   const wt = ath ? ath.weight + ' lbs' : '133 lbs';
   const dt = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL: null, stats: {}, notes: '', bookmarks: [] });
+  const videoURL = liveVideoBlobURL || null;
+  matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL, stats: {}, notes: '', bookmarks: [] });
   saveData();
-  toast('Match saved!');
+  toast(videoURL ? 'Match + video saved!' : 'Match saved!');
   if (finalize) {
+    liveVideoBlobURL = null;
+    closeCamera();
     resetLiveScoring();
     setTimeout(() => navTo('s-lib', null), 600);
   }
@@ -1450,9 +1572,12 @@ function pinLiveMatch(winner) {
   const res = winner === 'home' ? 'W' : 'L';
   const wt = ath ? ath.weight + ' lbs' : '133 lbs';
   const dt = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL: null, stats: {}, notes: 'Pin fall', bookmarks: [] });
+  const videoURL = liveVideoBlobURL || null;
+  liveVideoBlobURL = null;
+  matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL, stats: {}, notes: 'Pin fall', bookmarks: [] });
   saveData();
   toast('PIN — ' + (winner === 'home' ? w1 : w2) + ' wins!');
+  closeCamera();
   resetLiveScoring();
   setTimeout(() => navTo('s-lib', null), 800);
 }
@@ -1465,6 +1590,9 @@ function setLivePeriod(pp, btn) {
 
 /* ── NAVIGATION ── */
 function go(id) {
+  if (id !== 's-live' && mediaRecorder && mediaRecorder.state === 'recording') {
+    stopCameraRecording();
+  }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id === 's-home') { buildDashTabs(); renderDash(); }
@@ -1646,7 +1774,8 @@ Object.assign(window, {
   handleVideoUpload, saveUploadedMatch, clearUploadedVideo,
   togglePlay, seekRel, seekTo, jumpTo, addBookmark, toggleFullscreen,
   inc, dec, updateSummary, saveMatchStats, exportMatchStats, saveMatchNotes,
-  toggleRec, liveScore, undoLastScore, saveLiveMatch, pinLiveMatch, setLivePeriod,
+  openCamera, closeCamera, toggleCameraRecording, startCameraRecording, stopCameraRecording,
+  liveScore, undoLastScore, saveLiveMatch, pinLiveMatch, setLivePeriod,
   renderRoster, setRosterFilter, openAddAthlete, openEditAthlete, saveAthlete, removeAthlete, closeModal,
   buildAthleteFilters, setLibFilter, filterLib, renderLib, openMatch,
   signIn, signUp, signInWithGoogle, signOut, resetPassword, handleAvatarClick,

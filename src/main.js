@@ -677,16 +677,115 @@ function saveMatchNotes(notes) {
   saveData();
 }
 
-/* ── LIVE SCORING ── */
-let rec = false;
-function toggleRec() {
-  rec = !rec;
-  document.getElementById('rec-b').style.display = rec ? 'flex' : 'none';
-  document.getElementById('cam-btn').style.background = rec ? '#333' : 'var(--green)';
-  document.getElementById('cam-btn').style.borderColor = rec ? '#555' : 'var(--green)';
-  toast(rec ? 'Recording started — score below' : 'Recording stopped');
+/* ── CAMERA RECORDING ── */
+let mediaStream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let liveVideoBlobURL = null;
+let recTimerInterval = null;
+let recSeconds = 0;
+let wakeLock = null;
+
+async function openCamera() {
+  if (mediaStream) return;
+  const btn = document.getElementById('cam-btn');
+  if (btn) { btn.innerHTML = '⏳ Opening camera…'; btn.disabled = true; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true
+    });
+    mediaStream = stream;
+    const vid = document.getElementById('cam-preview-video');
+    if (vid) { vid.srcObject = stream; }
+    const area = document.getElementById('cam-preview-area');
+    if (area) area.style.display = 'block';
+    if (btn) btn.style.display = 'none';
+    try {
+      if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+    } catch (e) {}
+    toast('Camera ready — tap ⏺ REC to start recording');
+  } catch (err) {
+    if (btn) { btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>📹 Tap to Film & Score Live'; btn.disabled = false; }
+    toast(err.name === 'NotAllowedError' ? 'Camera permission denied' : 'Could not access camera');
+  }
 }
 
+function closeCamera() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  if (wakeLock) { try { wakeLock.release(); } catch(e){} wakeLock = null; }
+  clearInterval(recTimerInterval); recTimerInterval = null; recSeconds = 0;
+  const area = document.getElementById('cam-preview-area');
+  if (area) area.style.display = 'none';
+  const btn = document.getElementById('cam-btn');
+  if (btn) { btn.style.display = 'flex'; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>📹 Tap to Film & Score Live'; btn.disabled = false; }
+  _resetRecUI();
+}
+
+function _resetRecUI() {
+  const recBtn = document.getElementById('rec-toggle-btn');
+  if (recBtn) { recBtn.textContent = '⏺ REC'; recBtn.style.background = 'rgba(231,76,60,.15)'; recBtn.style.borderColor = 'rgba(231,76,60,.5)'; recBtn.style.color = '#F1948A'; }
+  const dur = document.getElementById('rec-duration');
+  if (dur) dur.style.display = 'none';
+  const rb = document.getElementById('rec-b');
+  if (rb) rb.style.display = 'none';
+}
+
+function toggleCameraRecording() {
+  if (!mediaStream) { openCamera(); return; }
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    stopCameraRecording();
+  } else {
+    startCameraRecording();
+  }
+}
+
+function startCameraRecording() {
+  if (!mediaStream) return;
+  recordedChunks = [];
+  if (liveVideoBlobURL) { URL.revokeObjectURL(liveVideoBlobURL); liveVideoBlobURL = null; }
+  const types = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4',''];
+  const mimeType = types.find(t => !t || MediaRecorder.isTypeSupported(t)) || '';
+  try { mediaRecorder = new MediaRecorder(mediaStream, mimeType ? { mimeType } : {}); }
+  catch (e) { mediaRecorder = new MediaRecorder(mediaStream); }
+  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    if (recordedChunks.length) {
+      const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+      if (liveVideoBlobURL) URL.revokeObjectURL(liveVideoBlobURL);
+      liveVideoBlobURL = URL.createObjectURL(blob);
+      const badge = document.getElementById('rec-saved-badge');
+      if (badge) badge.style.display = 'block';
+    }
+  };
+  mediaRecorder.start(1000);
+  const recBtn = document.getElementById('rec-toggle-btn');
+  if (recBtn) { recBtn.textContent = '⏹ STOP'; recBtn.style.background = '#c0392b'; recBtn.style.borderColor = '#c0392b'; recBtn.style.color = '#fff'; }
+  const rb = document.getElementById('rec-b');
+  if (rb) rb.style.display = 'flex';
+  const dur = document.getElementById('rec-duration');
+  if (dur) { dur.style.display = 'block'; dur.textContent = '● 0:00'; }
+  const badge = document.getElementById('rec-saved-badge');
+  if (badge) badge.style.display = 'none';
+  recSeconds = 0;
+  recTimerInterval = setInterval(() => {
+    recSeconds++;
+    const m = Math.floor(recSeconds / 60), s = recSeconds % 60;
+    const d = document.getElementById('rec-duration');
+    if (d) d.textContent = '● ' + m + ':' + (s < 10 ? '0' : '') + s;
+  }, 1000);
+  toast('● Recording — score below!');
+}
+
+function stopCameraRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  clearInterval(recTimerInterval); recTimerInterval = null;
+  _resetRecUI();
+  toast('Recording stopped — video attached to match');
+}
+
+/* ── LIVE SCORING ── */
 let lScores = { r: 0, b: 0 };
 let scoreHistory = [];
 
@@ -723,10 +822,13 @@ function saveLiveMatch(finalize) {
   const res = s1 >= s2 ? 'W' : 'L';
   const wt = ath ? ath.weight + ' lbs' : '133 lbs';
   const dt = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL: null, stats: {}, notes: '', bookmarks: [] });
+  const videoURL = liveVideoBlobURL || null;
+  matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL, stats: {}, notes: '', bookmarks: [] });
   saveData();
-  toast('Match saved!');
+  toast(videoURL ? 'Match + video saved!' : 'Match saved!');
   if (finalize) {
+    liveVideoBlobURL = null;
+    closeCamera();
     resetLiveScoring();
     setTimeout(() => navTo('s-lib', null), 600);
   }
@@ -743,9 +845,12 @@ function pinLiveMatch(winner) {
   const res = winner === 'home' ? 'W' : 'L';
   const wt = ath ? ath.weight + ' lbs' : '133 lbs';
   const dt = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL: null, stats: {}, notes: 'Pin fall', bookmarks: [] });
+  const videoURL = liveVideoBlobURL || null;
+  liveVideoBlobURL = null;
+  matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL, stats: {}, notes: 'Pin fall', bookmarks: [] });
   saveData();
   toast('PIN — ' + (winner === 'home' ? w1 : w2) + ' wins!');
+  closeCamera();
   resetLiveScoring();
   setTimeout(() => navTo('s-lib', null), 800);
 }
@@ -758,6 +863,10 @@ function setLivePeriod(pp, btn) {
 
 /* ── NAVIGATION ── */
 function go(id) {
+  // Stop active recording when leaving Live screen
+  if (id !== 's-live' && mediaRecorder && mediaRecorder.state === 'recording') {
+    stopCameraRecording();
+  }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (id === 's-home') { buildDashTabs(); renderDash(); }
@@ -939,7 +1048,8 @@ Object.assign(window, {
   handleVideoUpload, saveUploadedMatch, clearUploadedVideo,
   togglePlay, seekRel, seekTo, jumpTo, addBookmark, toggleFullscreen,
   inc, dec, updateSummary, saveMatchStats, exportMatchStats, saveMatchNotes,
-  toggleRec, liveScore, undoLastScore, saveLiveMatch, pinLiveMatch, setLivePeriod,
+  openCamera, closeCamera, toggleCameraRecording, startCameraRecording, stopCameraRecording,
+  liveScore, undoLastScore, saveLiveMatch, pinLiveMatch, setLivePeriod,
   renderRoster, setRosterFilter, openAddAthlete, openEditAthlete, saveAthlete, removeAthlete, closeModal,
   buildAthleteFilters, setLibFilter, filterLib, renderLib, openMatch,
   signIn, signUp, signInWithGoogle, signOut, resetPassword, handleAvatarClick,
