@@ -649,7 +649,7 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
         </div>
       </div>
     </div>
-    <div class="fg"><label>Result</label><select id="upload-result"><option value="W">Win</option><option value="L">Loss</option></select></div>
+    <div class="fg"><label>Result</label><select id="upload-result"><option value="W">Win (Decision)</option><option value="F">Win by Fall / Pin</option><option value="L">Loss</option></select></div>
     <div class="fg"><label>Competition / Tournament</label><input type="text" id="upload-event" placeholder="e.g. District Championships"/></div>
     <div class="fg"><label>Date</label><input type="date" id="upload-date"/></div>
     <button class="btn-p" onclick="saveUploadedMatch()">SAVE TO LIBRARY</button>
@@ -808,6 +808,7 @@ function clearUploadedVideo() {
 function saveUploadedMatch() {
   const athId = parseInt(document.getElementById('upload-athlete').value) || (athletes.length ? athletes[0].id : 1);
   const ath = athletes.find(a => a.id === athId);
+  if (!ath) { toast('Please select an athlete first'); return; }
   const opp = document.getElementById('upload-opp').value.trim() || 'Opponent';
   const wt = document.getElementById('upload-weight').value + ' lbs';
   const ev = document.getElementById('upload-event').value.trim() || 'Scrimmage';
@@ -815,22 +816,30 @@ function saveUploadedMatch() {
   const dt = rawDate
     ? new Date(rawDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  const res = document.getElementById('upload-result').value; // 'W' | 'L' | 'D'
+  const res = document.getElementById('upload-result').value; // 'W' | 'L' | 'F'
   const s1 = parseInt(document.getElementById('upload-s1').value) || 0;
   const s2 = parseInt(document.getElementById('upload-s2').value) || 0;
+  // Capture video URL before clearing UI (do NOT revoke — match now owns the blob)
+  const savedVideoURL = uploadedVideoURL;
+  uploadedVideoURL = null;
+  // Reset upload UI without revoking the blob URL
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('upload-zone').style.display = 'block';
+  const fi = document.getElementById('video-file-input');
+  if (fi) fi.value = '';
   matches.unshift({
-    w1: ath ? ath.name : 'Athlete', w2: opp, wt, ev, dt, s1, s2, res,
-    athId, videoURL: uploadedVideoURL, stats: {}, notes: '', bookmarks: []
+    w1: ath.name, w2: opp, wt, ev, dt, s1, s2, res,
+    athId, videoURL: savedVideoURL, stats: {}, notes: res === 'F' ? 'Fall (Pin)' : '', bookmarks: []
   });
   saveData();
   toast('Match saved to library!');
-  clearUploadedVideo();
   document.getElementById('upload-opp').value = '';
   document.getElementById('upload-event').value = '';
   document.getElementById('upload-date').value = '';
   document.getElementById('upload-s1').value = '';
   document.getElementById('upload-s2').value = '';
-  uploadedVideoURL = null;
+  // Reset filters so the new match is always visible
+  libFilters = { event: 'All', athlete: 'All' };
   setTimeout(() => navTo('s-lib', null), 800);
 }
 
@@ -1226,6 +1235,19 @@ function setLibFilter(type, val, btn) {
 
 function filterLib(q) { renderLib(q); }
 
+function resLabel(res) {
+  return res === 'W' ? 'W' : res === 'L' ? 'L' : res === 'F' ? 'FALL' : res;
+}
+
+function deleteMatch(idx, e) {
+  e.stopPropagation();
+  if (!confirm('Delete this match? This cannot be undone.')) return;
+  matches.splice(idx, 1);
+  saveData();
+  toast('Match deleted');
+  renderLib();
+}
+
 function renderLib(q = '') {
   let data = [...matches];
   if (libFilters.event !== 'All') data = data.filter(m => m.ev === libFilters.event);
@@ -1246,10 +1268,10 @@ function renderLib(q = '') {
       const idx = matches.indexOf(m);
       const row = document.createElement('div');
       row.className = 'lib-item';
-      const sc = m.res === 'W' ? 'var(--green)' : m.res === 'L' ? 'var(--red)' : 'var(--gold)';
+      const sc = (m.res === 'W' || m.res === 'F') ? 'var(--green)' : m.res === 'L' ? 'var(--red)' : 'var(--gold)';
       const ath = athletes.find(a => a.id === m.athId);
       const dot = ath ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${ath.color};margin-right:3px;vertical-align:middle;flex-shrink:0"></span>` : '';
-      row.innerHTML = `<div class="li-thumb">${m.videoURL ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="var(--green)"><polygon points="5 3 19 12 5 21 5 3"/></svg>' : '<svg viewBox="0 0 24 24" width="14" height="14" fill="rgba(255,255,255,.3)"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" fill="rgba(255,255,255,.3)"/></svg>'}</div><div style="flex:1;min-width:0"><div class="li-names">${dot}${m.w1} vs. ${m.w2}</div><div class="li-meta">${m.wt} · ${m.ev}${m.videoURL ? ' · 🎬' : ''}</div></div><div style="text-align:right;flex-shrink:0"><div class="li-score" style="color:${sc}">${m.res} ${m.s1}–${m.s2}</div><div class="li-date">${m.dt}</div></div>`;
+      row.innerHTML = `<div class="li-thumb">${m.videoURL ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="var(--green)"><polygon points="5 3 19 12 5 21 5 3"/></svg>' : '<svg viewBox="0 0 24 24" width="14" height="14" fill="rgba(255,255,255,.3)"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" fill="rgba(255,255,255,.3)"/></svg>'}</div><div style="flex:1;min-width:0"><div class="li-names">${dot}${m.w1} vs. ${m.w2}</div><div class="li-meta">${m.wt} · ${m.ev}${m.videoURL ? ' · 🎬' : ''}</div></div><div style="text-align:right;flex-shrink:0"><div class="li-score" style="color:${sc}">${resLabel(m.res)} ${m.s1}–${m.s2}</div><div class="li-date">${m.dt}</div></div><button onclick="deleteMatch(${idx},event)" style="margin-left:8px;flex-shrink:0;width:30px;height:30px;border-radius:6px;border:1px solid var(--border-light);background:var(--black-3);display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>`;
       row.onclick = () => openMatch(idx);
       list.appendChild(row);
     });
@@ -1276,10 +1298,11 @@ function openMatch(idx) {
   document.getElementById('vid-match-label').textContent = m.w1 + ' vs. ' + m.w2;
   if (ath) document.getElementById('md-s1').style.color = ath.color;
   const res = document.getElementById('md-res');
-  res.textContent = m.res === 'W' ? 'WIN' : m.res === 'L' ? 'LOSS' : 'DRAW';
-  res.style.background = m.res === 'W' ? 'rgba(29,185,84,.15)' : m.res === 'L' ? 'rgba(231,76,60,.15)' : 'rgba(240,180,41,.15)';
-  res.style.color = m.res === 'W' ? 'var(--green)' : m.res === 'L' ? 'var(--red)' : 'var(--gold)';
-  res.style.borderColor = m.res === 'W' ? 'rgba(29,185,84,.3)' : m.res === 'L' ? 'rgba(231,76,60,.3)' : 'rgba(240,180,41,.3)';
+  const isWin = m.res === 'W' || m.res === 'F';
+  res.textContent = m.res === 'W' ? 'WIN' : m.res === 'L' ? 'LOSS' : m.res === 'F' ? 'FALL' : 'DRAW';
+  res.style.background = isWin ? 'rgba(29,185,84,.15)' : m.res === 'L' ? 'rgba(231,76,60,.15)' : 'rgba(240,180,41,.15)';
+  res.style.color = isWin ? 'var(--green)' : m.res === 'L' ? 'var(--red)' : 'var(--gold)';
+  res.style.borderColor = isWin ? 'rgba(29,185,84,.3)' : m.res === 'L' ? 'rgba(231,76,60,.3)' : 'rgba(240,180,41,.3)';
 
   loadMatchVideo(m);
   loadCountersFromMatch(m);
@@ -1362,7 +1385,7 @@ function exportMatchStats() {
   const g = k => (counters[k] || 0);
   const lines = [
     m.w1 + ' vs ' + m.w2 + ' — ' + m.ev + ' ' + m.dt,
-    'Score: ' + m.s1 + '–' + m.s2 + ' ' + (m.res === 'W' ? 'WIN' : m.res === 'L' ? 'LOSS' : 'DRAW'),
+    'Score: ' + m.s1 + '–' + m.s2 + ' ' + (m.res === 'W' ? 'WIN' : m.res === 'L' ? 'LOSS' : m.res === 'F' ? 'FALL' : 'DRAW'),
     '',
     'NEUTRAL — OUR WRESTLER',
     'Single leg: ' + g('sl-att') + ' att, ' + g('sl-sc') + ' sc',
@@ -1777,7 +1800,7 @@ Object.assign(window, {
   openCamera, closeCamera, toggleCameraRecording, startCameraRecording, stopCameraRecording,
   liveScore, undoLastScore, saveLiveMatch, pinLiveMatch, setLivePeriod,
   renderRoster, setRosterFilter, openAddAthlete, openEditAthlete, saveAthlete, removeAthlete, closeModal,
-  buildAthleteFilters, setLibFilter, filterLib, renderLib, openMatch,
+  buildAthleteFilters, setLibFilter, filterLib, renderLib, openMatch, deleteMatch, resLabel,
   signIn, signUp, signInWithGoogle, signOut, resetPassword, handleAvatarClick,
   toast,
 });
