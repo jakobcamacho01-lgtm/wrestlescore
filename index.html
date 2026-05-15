@@ -297,14 +297,14 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
 .dsb-item.active{background:rgba(29,185,84,.12);color:var(--green)}
 .dsb-footer{padding:14px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
 @media(min-width:900px){
-  html{overflow:hidden}
-  body{align-items:stretch}
-  .shell{max-width:100%;width:100%;height:100vh;max-height:100vh;border-radius:0;flex-direction:row}
+  html{height:100%;overflow:hidden}
+  body{height:100%;align-items:stretch;justify-content:flex-start}
+  .shell{width:100%!important;max-width:100%!important;height:100vh!important;max-height:100vh!important;border-radius:0!important;box-shadow:none;flex-direction:row}
   .desktop-sidebar{display:flex;flex-direction:column;width:220px;min-width:220px;background:var(--black);border-right:1px solid var(--border);overflow:hidden;flex-shrink:0}
   .shell.login-mode .desktop-sidebar{display:none}
   .shell.login-mode #s-login{max-width:480px;margin:0 auto}
-  .desktop-main{display:flex;flex:1;min-width:0;overflow:hidden}
-  .screen{min-width:0}
+  .desktop-main{display:flex;flex:1;min-width:0;overflow:hidden;height:100vh}
+  .screen{min-width:0;height:100vh!important;max-height:100vh}
   .bnav{display:none!important}
   .app-hdr .hdr-top-row{display:none}
   .app-hdr{padding-top:10px}
@@ -800,12 +800,10 @@ if (typeof FIREBASE_CONFIGURED !== 'undefined' && FIREBASE_CONFIGURED) {
 </script>
 <script>
 /* ── STORAGE ── */
+let currentUserId = null; // cached after auth fires — avoids timing issues
+
 function getStorageKey() {
-  try {
-    const user = (typeof firebase !== 'undefined' && FIREBASE_CONFIGURED)
-      ? firebase.auth().currentUser : null;
-    return user ? `wrestlescore_v1_${user.uid}` : 'wrestlescore_v1';
-  } catch (e) { return 'wrestlescore_v1'; }
+  return currentUserId ? `wrestlescore_v1_${currentUserId}` : 'wrestlescore_v1';
 }
 
 function loadData() {
@@ -813,8 +811,9 @@ function loadData() {
     const raw = localStorage.getItem(getStorageKey());
     if (!raw) return;
     const d = JSON.parse(raw);
-    if (d.athletes && d.athletes.length) athletes = d.athletes;
-    if (d.matches && d.matches.length) matches = d.matches;
+    // Use Array.isArray so that empty arrays (user deleted all items) are preserved
+    if (Array.isArray(d.athletes)) athletes = d.athletes;
+    if (Array.isArray(d.matches))  matches  = d.matches;
     if (d.nextId) nextId = d.nextId;
   } catch (e) { /* ignore corrupt storage */ }
 }
@@ -1860,10 +1859,12 @@ if (typeof firebase !== 'undefined' && FIREBASE_CONFIGURED) {
   // Firebase is configured — use real auth
   firebase.auth().onAuthStateChanged(user => {
     if (user) {
+      currentUserId = user.uid; // cache UID so getStorageKey() works immediately
       updateUserAvatar(user);
       initApp();
       go('s-home');
     } else {
+      currentUserId = null;
       // Reset to defaults so stale data isn't visible behind login
       athletes = [...defaultAthletes];
       matches  = [...defaultMatches];

@@ -1,10 +1,8 @@
 /* ── STORAGE ── */
+let currentUserId = null; // cached after auth fires — avoids timing issues
+
 function getStorageKey() {
-  try {
-    const user = (typeof firebase !== 'undefined' && FIREBASE_CONFIGURED)
-      ? firebase.auth().currentUser : null;
-    return user ? `wrestlescore_v1_${user.uid}` : 'wrestlescore_v1';
-  } catch (e) { return 'wrestlescore_v1'; }
+  return currentUserId ? `wrestlescore_v1_${currentUserId}` : 'wrestlescore_v1';
 }
 
 function loadData() {
@@ -12,8 +10,9 @@ function loadData() {
     const raw = localStorage.getItem(getStorageKey());
     if (!raw) return;
     const d = JSON.parse(raw);
-    if (d.athletes && d.athletes.length) athletes = d.athletes;
-    if (d.matches && d.matches.length) matches = d.matches;
+    // Use Array.isArray so that empty arrays (user deleted all items) are preserved
+    if (Array.isArray(d.athletes)) athletes = d.athletes;
+    if (Array.isArray(d.matches))  matches  = d.matches;
     if (d.nextId) nextId = d.nextId;
   } catch (e) { /* ignore corrupt storage */ }
 }
@@ -1064,10 +1063,12 @@ if (typeof firebase !== 'undefined' && FIREBASE_CONFIGURED) {
   // Firebase is configured — use real auth
   firebase.auth().onAuthStateChanged(user => {
     if (user) {
+      currentUserId = user.uid; // cache UID so getStorageKey() works immediately
       updateUserAvatar(user);
       initApp();
       go('s-home');
     } else {
+      currentUserId = null;
       // Reset to defaults so stale data isn't visible behind login
       athletes = [...defaultAthletes];
       matches  = [...defaultMatches];
