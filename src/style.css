@@ -271,3 +271,61 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
 .toast.show{opacity:1}
 
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── DESKTOP SIDEBAR (hidden on mobile) ── */
+.desktop-sidebar{display:none}
+.desktop-main{display:contents}
+.film-left,.film-right,.live-cols,.live-left,.live-right{display:contents}
+.dsb-logo{padding:18px 16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.dsb-nav{display:flex;flex-direction:column;gap:2px;padding:10px 8px;flex-shrink:0}
+.dsb-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rs);border:none;background:none;color:var(--text-muted);font-family:var(--font-b);font-size:13px;font-weight:600;cursor:pointer;text-align:left;width:100%;transition:all .15s;-webkit-tap-highlight-color:transparent;line-height:1}
+.dsb-item svg{width:17px;height:17px;flex-shrink:0;transition:all .15s}
+.dsb-item:hover{background:var(--black-3);color:var(--white)}
+.dsb-item:hover svg{opacity:1}
+.dsb-item.active{background:rgba(29,185,84,.12);color:var(--green)}
+.dsb-footer{padding:14px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+
+/* ── DESKTOP BREAKPOINT (≥900px) ── */
+@media(min-width:900px){
+  html{overflow:hidden}
+  body{align-items:stretch}
+  .shell{max-width:100%;width:100%;height:100vh;max-height:100vh;border-radius:0;flex-direction:row}
+
+  /* Sidebar */
+  .desktop-sidebar{display:flex;flex-direction:column;width:220px;min-width:220px;background:var(--black);border-right:1px solid var(--border);overflow:hidden;flex-shrink:0}
+  /* Login: no sidebar */
+  .shell.login-mode .desktop-sidebar{display:none}
+  .shell.login-mode #s-login{max-width:480px;margin:0 auto}
+
+  /* Main area */
+  .desktop-main{display:flex;flex:1;min-width:0;overflow:hidden}
+  .screen{min-width:0}
+
+  /* Hide bottom navs */
+  .bnav{display:none!important}
+
+  /* Dashboard: hide top logo row — sidebar has it */
+  .app-hdr .hdr-top-row{display:none}
+  .app-hdr{padding-top:10px}
+
+  /* Film room: video left, stats right */
+  .film-left{display:flex;flex-direction:column;width:52%;min-width:300px;flex-shrink:0;border-right:1px solid var(--border);overflow:hidden}
+  .film-right{display:flex;flex-direction:column;flex:1;min-width:0;overflow:hidden}
+  .film-left .video-placeholder{height:230px}
+  video.match-video{max-height:230px}
+
+  /* Stat grids: 3 columns */
+  .stat-cards-grid{grid-template-columns:repeat(3,1fr)}
+  .stat-card.full{grid-column:1/4}
+
+  /* Live scoring: setup left, buttons right */
+  .live-cols{display:flex;flex:1;min-width:0;overflow:hidden}
+  .live-left{display:flex;flex-direction:column;width:340px;min-width:260px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .live-right{display:flex;flex-direction:column;flex:1;min-width:0;overflow:hidden}
+  .live-camera-area{height:210px}
+  .live-score-bar .ls-score{font-size:46px}
+
+  /* Library: more breathing room */
+  .lib-item{padding:13px 18px}
+  .stat-cards-grid{padding:10px 14px}
+}

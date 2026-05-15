@@ -886,12 +886,22 @@ function setLivePeriod(pp, btn) {
 
 /* ── NAVIGATION ── */
 function go(id) {
-  // Stop active recording when leaving Live screen
   if (id !== 's-live' && mediaRecorder && mediaRecorder.state === 'recording') {
     stopCameraRecording();
   }
+  // Show/hide desktop sidebar for login screen
+  const shell = document.querySelector('.shell');
+  if (shell) shell.classList.toggle('login-mode', id === 's-login');
+
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+
+  // Sync both bottom nav and desktop sidebar active states
+  const navMap = {'s-home':'home','s-live':'live','s-lib':'lib','s-roster':'roster','s-upload':'upload'};
+  document.querySelectorAll('.ni,.dsb-item').forEach(b => b.classList.remove('active'));
+  const key = navMap[id];
+  if (key) document.querySelectorAll('[data-nav="'+key+'"]').forEach(b => b.classList.add('active'));
+
   if (id === 's-home') { buildDashTabs(); renderDash(); }
   if (id === 's-lib') { buildAthleteFilters(); renderLib(); }
   if (id === 's-roster') renderRoster();
@@ -899,9 +909,7 @@ function go(id) {
   if (id === 's-live') updateUploadAthSelect();
 }
 function navTo(id, btn) {
-  go(id);
-  document.querySelectorAll('.ni').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
+  go(id); // go() handles all nav syncing via data-nav attributes
 }
 function switchTab(t) {
   document.getElementById('tl').classList.toggle('active', t === 'login');
@@ -1034,14 +1042,20 @@ function initApp() {
 
 function updateUserAvatar(user) {
   const el = document.getElementById('user-avatar');
+  const elDsb = document.getElementById('user-avatar-dsb');
+  const nameEl = document.getElementById('dsb-user-name');
   if (!el) return;
   if (user) {
     const initials = user.displayName
       ? user.displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
       : user.email.slice(0, 2).toUpperCase();
     el.textContent = initials;
+    if (elDsb) elDsb.textContent = initials;
+    if (nameEl) nameEl.textContent = user.displayName || user.email;
   } else {
     el.textContent = '?';
+    if (elDsb) elDsb.textContent = '?';
+    if (nameEl) nameEl.textContent = 'Not signed in';
   }
 }
 

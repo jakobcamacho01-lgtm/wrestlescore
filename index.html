@@ -284,10 +284,74 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
 .toast.show{opacity:1}
 
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* DESKTOP SIDEBAR */
+.desktop-sidebar{display:none}
+.desktop-main{display:contents}
+.film-left,.film-right,.live-cols,.live-left,.live-right{display:contents}
+.dsb-logo{padding:18px 16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.dsb-nav{display:flex;flex-direction:column;gap:2px;padding:10px 8px;flex-shrink:0}
+.dsb-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rs);border:none;background:none;color:var(--text-muted);font-family:var(--font-b);font-size:13px;font-weight:600;cursor:pointer;text-align:left;width:100%;transition:all .15s;-webkit-tap-highlight-color:transparent;line-height:1}
+.dsb-item svg{width:17px;height:17px;flex-shrink:0;transition:all .15s}
+.dsb-item:hover{background:var(--black-3);color:var(--white)}
+.dsb-item.active{background:rgba(29,185,84,.12);color:var(--green)}
+.dsb-footer{padding:14px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+@media(min-width:900px){
+  html{overflow:hidden}
+  body{align-items:stretch}
+  .shell{max-width:100%;width:100%;height:100vh;max-height:100vh;border-radius:0;flex-direction:row}
+  .desktop-sidebar{display:flex;flex-direction:column;width:220px;min-width:220px;background:var(--black);border-right:1px solid var(--border);overflow:hidden;flex-shrink:0}
+  .shell.login-mode .desktop-sidebar{display:none}
+  .shell.login-mode #s-login{max-width:480px;margin:0 auto}
+  .desktop-main{display:flex;flex:1;min-width:0;overflow:hidden}
+  .screen{min-width:0}
+  .bnav{display:none!important}
+  .app-hdr .hdr-top-row{display:none}
+  .app-hdr{padding-top:10px}
+  .film-left{display:flex;flex-direction:column;width:52%;min-width:300px;flex-shrink:0;border-right:1px solid var(--border);overflow:hidden}
+  .film-right{display:flex;flex-direction:column;flex:1;min-width:0;overflow:hidden}
+  .film-left .video-placeholder{height:230px}
+  video.match-video{max-height:230px}
+  .stat-cards-grid{grid-template-columns:repeat(3,1fr)}
+  .stat-card.full{grid-column:1/4}
+  .live-cols{display:flex;flex:1;min-width:0;overflow:hidden}
+  .live-left{display:flex;flex-direction:column;width:340px;min-width:260px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .live-right{display:flex;flex-direction:column;flex:1;min-width:0;overflow:hidden}
+  .live-camera-area{height:210px}
+  .live-score-bar .ls-score{font-size:46px}
+  .lib-item{padding:13px 18px}
+}
 </style>
 </head>
 <body>
-<div class="shell">
+<div class="shell login-mode">
+
+<!-- ══ DESKTOP SIDEBAR ══ -->
+<nav class="desktop-sidebar" id="desktop-sidebar">
+  <div class="dsb-logo">
+    <div style="width:34px;height:34px;background:var(--green);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 40 40" width="20" height="20" fill="var(--black)"><path d="M20 4C11.2 4 4 11.2 4 20s7.2 16 16 16 16-7.2 16-16S28.8 4 20 4zm0 6c2.2 0 4 1.8 4 4s-1.8 4-4 4-4-1.8-4-4 1.8-4 4-4zm0 22.4c-4 0-7.6-2-9.6-5 .1-3.2 6.4-5 9.6-5 3.2 0 9.5 1.8 9.6 5-2 3-5.6 5-9.6 5z"/></svg></div>
+    <div><div style="font-family:var(--font-d);font-size:18px;font-weight:800;color:var(--white);letter-spacing:.5px;line-height:1.1">WRESTLE<span style="color:var(--green)">SCORE</span></div><div style="font-size:10px;color:var(--text-muted);margin-top:2px">Coaching Platform</div></div>
+  </div>
+  <div class="dsb-nav">
+    <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);padding:6px 12px 4px">Menu</div>
+    <button class="dsb-item active" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Dashboard</button>
+    <button class="dsb-item" data-nav="live" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>Live Scoring</button>
+    <button class="dsb-item" data-nav="lib" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h7"/></svg>Match Library</button>
+    <button class="dsb-item" data-nav="roster" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Roster</button>
+  </div>
+  <div style="height:1px;background:var(--border);margin:4px 14px"></div>
+  <div style="padding:4px 8px">
+    <button class="dsb-item" data-nav="upload" onclick="navTo('s-upload',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Add Match</button>
+  </div>
+  <div style="flex:1"></div>
+  <div class="dsb-footer">
+    <div class="avatar-btn" id="user-avatar-dsb" onclick="handleAvatarClick()" title="Account" style="flex-shrink:0">?</div>
+    <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="dsb-user-name">Coach</div><div style="font-size:10px;color:var(--text-muted)">WrestleScore</div></div>
+  </div>
+</nav>
+
+<!-- ══ MAIN CONTENT AREA ══ -->
+<div class="desktop-main">
 
 <!-- ══ LOGIN ══ -->
 <div class="screen active" id="s-login">
@@ -342,10 +406,10 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
   </div>
   <div class="scroll-area" id="dash-body"></div>
   <div class="bnav">
-    <button class="ni active" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
-    <button class="ni" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
-    <button class="ni" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
-    <button class="ni" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+    <button class="ni active" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
+    <button class="ni" data-nav="live" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
+    <button class="ni" data-nav="lib" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
+    <button class="ni" data-nav="roster" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
   </div>
 </div>
 
@@ -378,10 +442,10 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
   </div>
   <div class="scroll-area" id="lib-list"></div>
   <div class="bnav">
-    <button class="ni" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
-    <button class="ni" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
+    <button class="ni" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
+    <button class="ni" data-nav="live" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
     <button class="ni active" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
-    <button class="ni" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+    <button class="ni" data-nav="roster" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
   </div>
 </div>
 
@@ -393,6 +457,7 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
     <button style="padding:4px 10px;border-radius:20px;border:1px solid var(--green);background:none;color:var(--green);font-family:var(--font-d);font-size:11px;font-weight:700;cursor:pointer" onclick="exportMatchStats()">Export</button>
   </div>
   <div class="filmroom">
+  <div class="film-left">
     <div class="video-section paused" id="video-section">
       <div class="video-placeholder" id="vid-placeholder">
         <svg viewBox="0 0 24 24" width="36" height="36" fill="rgba(255,255,255,.18)"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" fill="rgba(255,255,255,.18)"/></svg>
@@ -410,6 +475,8 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
       <div class="progress-bar-wrap" id="progress-bar" onclick="seekTo(event)"><div class="progress-fill" id="progress-fill"></div><div class="progress-handle" id="progress-handle"></div></div>
       <div class="time-row"><span id="time-cur">0:00</span><span id="time-total">0:00</span></div>
     </div>
+  </div><!-- end film-left -->
+  <div class="film-right">
     <div class="md-hero">
       <div class="md-matchup">
         <div><div class="md-wname" id="md-w1">Wrestler</div><div style="font-size:10px;color:var(--text-muted)">Home</div></div>
@@ -517,8 +584,9 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
         </div>
       </div>
     </div>
-  </div>
-</div>
+  </div><!-- end film-right -->
+  </div><!-- end filmroom -->
+</div><!-- end s-match -->
 
 <!-- ══ LIVE FILM & SCORE ══ -->
 <div class="screen" id="s-live">
@@ -530,6 +598,8 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
     </div>
   </div>
 
+  <div class="live-cols">
+  <div class="live-left">
   <!-- Camera Preview (hidden until camera opens) -->
   <div class="live-camera-area" id="cam-preview-area" style="display:none">
     <video id="cam-preview-video" muted autoplay playsinline></video>
@@ -582,7 +652,8 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
       <div class="ls-score" id="sc-b" style="color:var(--blue)">0</div>
     </div>
   </div>
-
+  </div><!-- end live-left -->
+  <div class="live-right">
   <div class="scroll-area" style="background:var(--black-2)">
     <div style="padding:6px 12px 3px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);text-align:center">Home (left) · Opponent (right)</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px 12px">
@@ -608,12 +679,14 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
       <button class="btn-p" onclick="saveLiveMatch(true)">Finalize →</button>
     </div>
   </div>
+  </div><!-- end live-right -->
+  </div><!-- end live-cols -->
 
   <div class="bnav">
-    <button class="ni" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
-    <button class="ni active" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
-    <button class="ni" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
-    <button class="ni" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+    <button class="ni" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
+    <button class="ni active" data-nav="live" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
+    <button class="ni" data-nav="lib" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
+    <button class="ni" data-nav="roster" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
   </div>
 </div>
 
@@ -673,13 +746,14 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
   </div>
   <div class="scroll-area" id="roster-list"></div>
   <div class="bnav">
-    <button class="ni" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
-    <button class="ni" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
-    <button class="ni" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
-    <button class="ni active" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+    <button class="ni" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
+    <button class="ni" data-nav="live" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
+    <button class="ni" data-nav="lib" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
+    <button class="ni active" data-nav="roster" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
   </div>
 </div>
 
+</div><!-- end desktop-main -->
 </div><!-- end shell -->
 
 <!-- ADD/EDIT ATHLETE MODAL -->
@@ -1616,8 +1690,14 @@ function go(id) {
   if (id !== 's-live' && mediaRecorder && mediaRecorder.state === 'recording') {
     stopCameraRecording();
   }
+  const shell = document.querySelector('.shell');
+  if (shell) shell.classList.toggle('login-mode', id === 's-login');
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  const navMap = {'s-home':'home','s-live':'live','s-lib':'lib','s-roster':'roster','s-upload':'upload'};
+  document.querySelectorAll('.ni,.dsb-item').forEach(b => b.classList.remove('active'));
+  const key = navMap[id];
+  if (key) document.querySelectorAll('[data-nav="'+key+'"]').forEach(b => b.classList.add('active'));
   if (id === 's-home') { buildDashTabs(); renderDash(); }
   if (id === 's-lib') { buildAthleteFilters(); renderLib(); }
   if (id === 's-roster') renderRoster();
@@ -1626,8 +1706,6 @@ function go(id) {
 }
 function navTo(id, btn) {
   go(id);
-  document.querySelectorAll('.ni').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
 }
 function switchTab(t) {
   document.getElementById('tl').classList.toggle('active', t === 'login');
@@ -1760,14 +1838,20 @@ function initApp() {
 
 function updateUserAvatar(user) {
   const el = document.getElementById('user-avatar');
+  const elDsb = document.getElementById('user-avatar-dsb');
+  const nameEl = document.getElementById('dsb-user-name');
   if (!el) return;
   if (user) {
     const initials = user.displayName
       ? user.displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
       : user.email.slice(0, 2).toUpperCase();
     el.textContent = initials;
+    if (elDsb) elDsb.textContent = initials;
+    if (nameEl) nameEl.textContent = user.displayName || user.email;
   } else {
     el.textContent = '?';
+    if (elDsb) elDsb.textContent = '?';
+    if (nameEl) nameEl.textContent = 'Not signed in';
   }
 }
 
