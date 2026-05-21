@@ -1,3 +1,174 @@
+/* ── YOUTUBE ── */
+const YT_CLIENT_ID = '459710125699-n7kg9phbag9e2tk2r1tmb1fccjgirojo.apps.googleusercontent.com';
+let ytAccessToken   = null;
+let ytTokenClient   = null;
+let ytPlayer        = null;
+let ytPlayerReady   = false;
+let useYouTube      = false;
+let pendingYtBlob   = null;
+let pendingYtMatchIdx = -1;
+let liveVideoBlob   = null;  // raw Blob kept for YouTube upload
+let uploadMode      = 'file'; // 'file' | 'youtube'
+
+// Called by YouTube IFrame API when its script loads
+window.onYouTubeIframeAPIReady = function() { ytPlayerReady = true; };
+
+function parseYouTubeId(url) {
+  if (!url) return null;
+  const patterns = [
+    /[?&]v=([A-Za-z0-9_-]{11})/,
+    /youtu\.be\/([A-Za-z0-9_-]{11})/,
+    /\/embed\/([A-Za-z0-9_-]{11})/,
+    /\/shorts\/([A-Za-z0-9_-]{11})/,
+  ];
+  for (const p of patterns) { const m = url.match(p); if (m) return m[1]; }
+  return null;
+}
+function isYtURL(u)  { return !!(u && u.startsWith('youtube:')); }
+function ytId(u)     { return u ? u.replace('youtube:', '') : null; }
+
+function loadYouTubePlayer(videoId) {
+  if (!ytPlayerReady) {
+    let tries = 0;
+    const wait = setInterval(() => {
+      tries++;
+      if (ytPlayerReady) { clearInterval(wait); loadYouTubePlayer(videoId); }
+      else if (tries > 40) clearInterval(wait);
+    }, 250);
+    return;
+  }
+  if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
+    ytPlayer.loadVideoById(videoId);
+    return;
+  }
+  // First time — create the player
+  ytPlayer = new YT.Player('yt-player', {
+    videoId,
+    width: '100%', height: '100%',
+    playerVars: { controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
+    events: {
+      onStateChange(e) {
+        const vs   = document.getElementById('video-section');
+        const icon = document.getElementById('play-icon');
+        if (e.data === YT.PlayerState.PLAYING) {
+          playing = true;
+          if (vs)   vs.classList.remove('paused');
+          if (icon) icon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+          clearInterval(vidInterval);
+          vidInterval = setInterval(updateYtProgress, 500);
+        } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
+          playing = false;
+          if (vs)   vs.classList.add('paused');
+          if (icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+          clearInterval(vidInterval);
+          updateYtProgress();
+        }
+      }
+    }
+  });
+}
+
+function updateYtProgress() {
+  if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
+  const cur = ytPlayer.getCurrentTime() || 0;
+  const dur = ytPlayer.getDuration()    || 0;
+  const p   = dur > 0 ? cur / dur * 100 : 0;
+  const f   = document.getElementById('progress-fill');
+  const h   = document.getElementById('progress-handle');
+  if (f) f.style.width = p + '%';
+  if (h) h.style.left  = p + '%';
+  const tc = document.getElementById('time-cur');
+  const tt = document.getElementById('time-total');
+  if (tc) tc.textContent = fmt(cur);
+  if (tt) tt.textContent = fmt(dur);
+}
+
+/* ── YOUTUBE AUTH & UPLOAD ── */
+function initYouTubeAuth(onTokenReady) {
+  if (typeof google === 'undefined' || !google.accounts) {
+    toast('Google auth SDK not loaded yet — try again in a moment'); return;
+  }
+  ytTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: YT_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/youtube.upload',
+    callback: async (response) => {
+      if (response.error) { toast('YouTube auth failed: ' + response.error); return; }
+      ytAccessToken = response.access_token;
+      if (onTokenReady) await onTokenReady();
+    },
+  });
+  ytTokenClient.requestAccessToken();
+}
+
+async function _doYouTubeUpload() {
+  if (!pendingYtBlob || !ytAccessToken) return;
+  const btn  = document.getElementById('yt-upload-btn');
+  const done = document.getElementById('yt-upload-done');
+  const prog = document.getElementById('yt-upload-prog');
+  if (btn)  { btn.disabled = true; btn.textContent = 'Uploading…'; }
+  if (prog) prog.style.display = 'block';
+
+  try {
+    const title = `WrestleScore Match – ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    const metadata = {
+      snippet: { title, description: 'Recorded with WrestleScore', categoryId: '17' },
+      status:  { privacyStatus: 'unlisted' },
+    };
+
+    // Step 1 — initiate resumable upload session
+    const initRes = await fetch(
+      'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${ytAccessToken}`,
+          'Content-Type': 'application/json',
+          'X-Upload-Content-Type': pendingYtBlob.type || 'video/webm',
+          'X-Upload-Content-Length': pendingYtBlob.size,
+        },
+        body: JSON.stringify(metadata),
+      }
+    );
+    if (!initRes.ok) throw new Error(`Init failed (${initRes.status})`);
+    const uploadUrl = initRes.headers.get('Location');
+
+    // Step 2 — upload the blob
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': pendingYtBlob.type || 'video/webm' },
+      body: pendingYtBlob,
+    });
+    if (!uploadRes.ok) throw new Error(`Upload failed (${uploadRes.status})`);
+    const data = await uploadRes.json();
+    const videoId = data.id;
+
+    // Patch the saved match to use the YouTube URL
+    if (pendingYtMatchIdx >= 0 && pendingYtMatchIdx < matches.length) {
+      const old = matches[pendingYtMatchIdx].videoURL;
+      if (old && !isYtURL(old)) URL.revokeObjectURL(old);
+      matches[pendingYtMatchIdx].videoURL = 'youtube:' + videoId;
+      saveData();
+    }
+
+    pendingYtBlob = null; pendingYtMatchIdx = -1;
+    if (btn)  btn.style.display = 'none';
+    if (prog) prog.style.display = 'none';
+    if (done) done.style.display = 'block';
+    toast('✓ Uploaded to YouTube!');
+  } catch (err) {
+    console.error('[YT Upload]', err);
+    toast('Upload failed — ' + err.message);
+    if (btn)  { btn.disabled = false; btn.textContent = '▲ Save to YouTube'; }
+    if (prog) prog.style.display = 'none';
+  }
+}
+
+function uploadLiveToYouTube() {
+  if (!pendingYtBlob) { toast('No recording available to upload'); return; }
+  if (ytAccessToken) { _doYouTubeUpload(); return; }
+  initYouTubeAuth(_doYouTubeUpload);
+}
+
 /* ── STORAGE ── */
 let currentUserId = null; // cached after auth fires — avoids timing issues
 
@@ -77,6 +248,14 @@ function clearUploadedVideo() {
   if (fi) fi.value = '';
 }
 
+function setUploadMode(mode) {
+  uploadMode = mode;
+  document.getElementById('upload-mode-file').classList.toggle('on', mode === 'file');
+  document.getElementById('upload-mode-yt').classList.toggle('on', mode === 'youtube');
+  document.getElementById('upload-file-area').style.display = mode === 'file' ? 'block' : 'none';
+  document.getElementById('upload-yt-area').style.display = mode === 'youtube' ? 'block' : 'none';
+}
+
 function saveUploadedMatch() {
   const athId = parseInt(document.getElementById('upload-athlete').value) || (athletes.length ? athletes[0].id : 1);
   const ath = athletes.find(a => a.id === athId);
@@ -91,14 +270,24 @@ function saveUploadedMatch() {
   const res = document.getElementById('upload-result').value; // 'W' | 'L' | 'F'
   const s1 = parseInt(document.getElementById('upload-s1').value) || 0;
   const s2 = parseInt(document.getElementById('upload-s2').value) || 0;
-  // Capture video URL before clearing UI (do NOT revoke — match now owns the blob)
-  const savedVideoURL = uploadedVideoURL;
-  uploadedVideoURL = null;
-  // Reset upload UI without revoking the blob URL
-  document.getElementById('upload-preview').style.display = 'none';
-  document.getElementById('upload-zone').style.display = 'block';
-  const fi = document.getElementById('video-file-input');
-  if (fi) fi.value = '';
+  let savedVideoURL = null;
+  if (uploadMode === 'youtube') {
+    const ytUrlVal = document.getElementById('upload-yt-url').value.trim();
+    if (ytUrlVal) {
+      const vid = parseYouTubeId(ytUrlVal);
+      if (!vid) { toast('Invalid YouTube URL — please check the link'); return; }
+      savedVideoURL = 'youtube:' + vid;
+    }
+    document.getElementById('upload-yt-url').value = '';
+    setUploadMode('file'); // reset for next time
+  } else {
+    savedVideoURL = uploadedVideoURL;
+    uploadedVideoURL = null;
+    document.getElementById('upload-preview').style.display = 'none';
+    document.getElementById('upload-zone').style.display = 'block';
+    const fi = document.getElementById('video-file-input');
+    if (fi) fi.value = '';
+  }
   matches.unshift({
     w1: ath.name, w2: opp, wt, ev, dt, s1, s2, res,
     athId, videoURL: savedVideoURL, stats: {}, notes: res === 'F' ? 'Fall (Pin)' : '', bookmarks: []
@@ -144,6 +333,11 @@ function updateProgress() {
 
 function togglePlay() {
   const vs = document.getElementById('video-section');
+  if (useYouTube && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+    if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
+    else ytPlayer.playVideo();
+    return;
+  }
   if (useRealVideo && currentVideoEl) {
     if (currentVideoEl.paused) {
       currentVideoEl.play();
@@ -175,6 +369,10 @@ function togglePlay() {
 }
 
 function seekRel(d) {
+  if (useYouTube && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+    ytPlayer.seekTo(Math.max(0, ytPlayer.getCurrentTime() + d), true);
+    updateYtProgress(); return;
+  }
   if (useRealVideo && currentVideoEl) { currentVideoEl.currentTime = Math.max(0, currentVideoEl.currentTime + d); updateProgress(); }
   else { simCur = Math.max(0, Math.min(simTotal, simCur + d)); updateProgress(); }
 }
@@ -184,21 +382,30 @@ function seekTo(e) {
   if (!b) return;
   const r = b.getBoundingClientRect();
   const pct = (e.clientX - r.left) / r.width;
+  if (useYouTube && ytPlayer && typeof ytPlayer.getDuration === 'function') {
+    ytPlayer.seekTo(pct * ytPlayer.getDuration(), true);
+    updateYtProgress(); return;
+  }
   if (useRealVideo && currentVideoEl) currentVideoEl.currentTime = pct * currentVideoEl.duration;
   else simCur = Math.round(pct * simTotal);
   updateProgress();
 }
 
 function jumpTo(s) {
-  if (useRealVideo && currentVideoEl) currentVideoEl.currentTime = s;
-  else simCur = s;
+  if (useYouTube && ytPlayer && typeof ytPlayer.seekTo === 'function') {
+    ytPlayer.seekTo(s, true); updateYtProgress();
+  } else if (useRealVideo && currentVideoEl) {
+    currentVideoEl.currentTime = s;
+  } else { simCur = s; }
   updateProgress();
   if (!playing) togglePlay();
   toast('Jumped to ' + fmt(s));
 }
 
 function addBookmark() {
-  const cur = useRealVideo && currentVideoEl ? Math.floor(currentVideoEl.currentTime) : simCur;
+  const cur = (useYouTube && ytPlayer && typeof ytPlayer.getCurrentTime === 'function')
+    ? Math.floor(ytPlayer.getCurrentTime())
+    : (useRealVideo && currentVideoEl ? Math.floor(currentVideoEl.currentTime) : simCur);
   const t = fmt(cur);
   const s = cur;
   const list = document.getElementById('clips-list');
@@ -220,37 +427,48 @@ function addBookmark() {
 function loadMatchVideo(m) {
   const vs = document.getElementById('video-section');
   const placeholder = document.getElementById('vid-placeholder');
-  if (m.videoURL) {
-    useRealVideo = true;
+  const ytWrap = document.getElementById('yt-player-wrap');
+  if (playing) { playing = false; clearInterval(vidInterval); }
+  vs.classList.add('paused');
+  const icon = document.getElementById('play-icon');
+  if (icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+
+  if (isYtURL(m.videoURL)) {
+    useYouTube = true; useRealVideo = false; currentVideoEl = null;
+    const old = vs.querySelector('video.match-video');
+    if (old) { old.pause(); old.style.display = 'none'; }
+    placeholder.style.display = 'none';
+    if (ytWrap) ytWrap.style.display = 'block';
+    vs.classList.add('has-video');
+    loadYouTubePlayer(ytId(m.videoURL));
+  } else if (m.videoURL) {
+    useYouTube = false; useRealVideo = true;
+    if (ytWrap) ytWrap.style.display = 'none';
+    if (ytPlayer && typeof ytPlayer.stopVideo === 'function') ytPlayer.stopVideo();
     let vid = vs.querySelector('video.match-video');
     if (!vid) {
       vid = document.createElement('video');
       vid.className = 'match-video';
       vid.setAttribute('playsinline', '');
-      vid.setAttribute('controls', '');
       vs.insertBefore(vid, placeholder);
     }
     vid.src = m.videoURL;
-    placeholder.style.display = 'none';
     vid.style.display = 'block';
+    placeholder.style.display = 'none';
     currentVideoEl = vid;
     vid.ontimeupdate = updateProgress;
     vid.ondurationchange = updateProgress;
     vs.classList.add('has-video');
   } else {
-    useRealVideo = false;
-    currentVideoEl = null;
+    useYouTube = false; useRealVideo = false; currentVideoEl = null;
+    if (ytWrap) ytWrap.style.display = 'none';
+    if (ytPlayer && typeof ytPlayer.stopVideo === 'function') ytPlayer.stopVideo();
     const old = vs.querySelector('video.match-video');
     if (old) old.remove();
     placeholder.style.display = 'flex';
-    simCur = 0;
-    simTotal = 306;
+    simCur = 0; simTotal = 306;
     vs.classList.remove('has-video');
   }
-  if (playing) { playing = false; clearInterval(vidInterval); }
-  vs.classList.add('paused');
-  const icon = document.getElementById('play-icon');
-  if (icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
   updateProgress();
 }
 
@@ -742,6 +960,13 @@ function closeCamera() {
   if (area) area.style.display = 'none';
   const btn = document.getElementById('cam-btn');
   if (btn) { btn.style.display = 'flex'; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>📹 Tap to Film & Score Live'; btn.disabled = false; }
+  liveVideoBlob = null;
+  const ytArea = document.getElementById('yt-live-upload-area');
+  if (ytArea) { ytArea.style.display = 'none'; }
+  const ytBtn = document.getElementById('yt-upload-btn');
+  if (ytBtn) { ytBtn.textContent = '▲ Save to YouTube'; ytBtn.disabled = false; }
+  const ytDone = document.getElementById('yt-upload-done');
+  if (ytDone) ytDone.style.display = 'none';
   _resetRecUI();
 }
 
@@ -766,6 +991,7 @@ function toggleCameraRecording() {
 function startCameraRecording() {
   if (!mediaStream) return;
   recordedChunks = [];
+  liveVideoBlob = null;
   if (liveVideoBlobURL) { URL.revokeObjectURL(liveVideoBlobURL); liveVideoBlobURL = null; }
   const types = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4',''];
   const mimeType = types.find(t => !t || MediaRecorder.isTypeSupported(t)) || '';
@@ -774,11 +1000,14 @@ function startCameraRecording() {
   mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
   mediaRecorder.onstop = () => {
     if (recordedChunks.length) {
-      const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+      liveVideoBlob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
       if (liveVideoBlobURL) URL.revokeObjectURL(liveVideoBlobURL);
-      liveVideoBlobURL = URL.createObjectURL(blob);
+      liveVideoBlobURL = URL.createObjectURL(liveVideoBlob);
       const badge = document.getElementById('rec-saved-badge');
       if (badge) badge.style.display = 'block';
+      // Show YouTube upload button
+      const ytArea = document.getElementById('yt-live-upload-area');
+      if (ytArea) ytArea.style.display = 'block';
     }
   };
   mediaRecorder.start(1000);
@@ -848,6 +1077,19 @@ function saveLiveMatch(finalize) {
   matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL, stats: {}, notes: '', bookmarks: [] });
   saveData();
   toast(videoURL ? 'Match + video saved!' : 'Match saved!');
+
+  // If a recording exists, offer YouTube upload (match is now at index 0)
+  if (liveVideoBlob) {
+    pendingYtBlob     = liveVideoBlob;
+    pendingYtMatchIdx = 0;
+    const ytArea = document.getElementById('yt-live-upload-area');
+    const ytBtn  = document.getElementById('yt-upload-btn');
+    const ytDone = document.getElementById('yt-upload-done');
+    if (ytArea) ytArea.style.display = 'block';
+    if (ytBtn)  { ytBtn.style.display = 'flex'; ytBtn.textContent = '▲ Save to YouTube'; ytBtn.disabled = false; }
+    if (ytDone) ytDone.style.display = 'none';
+  }
+
   if (finalize) {
     liveVideoBlobURL = null;
     closeCamera();
@@ -1084,6 +1326,7 @@ if (typeof firebase !== 'undefined' && FIREBASE_CONFIGURED) {
 Object.assign(window, {
   go, navTo, switchTab, showTab,
   handleVideoUpload, saveUploadedMatch, clearUploadedVideo,
+  setUploadMode, parseYouTubeId, uploadLiveToYouTube,
   togglePlay, seekRel, seekTo, jumpTo, addBookmark, toggleFullscreen,
   inc, dec, updateSummary, saveMatchStats, exportMatchStats, saveMatchNotes,
   openCamera, closeCamera, toggleCameraRecording, startCameraRecording, stopCameraRecording,
@@ -1091,5 +1334,6 @@ Object.assign(window, {
   renderRoster, setRosterFilter, openAddAthlete, openEditAthlete, saveAthlete, removeAthlete, closeModal,
   buildAthleteFilters, setLibFilter, filterLib, renderLib, openMatch, deleteMatch, resLabel,
   signIn, signUp, signInWithGoogle, signOut, resetPassword, handleAvatarClick,
+  setUploadMode, uploadLiveToYouTube,
   toast,
 });
