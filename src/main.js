@@ -1062,34 +1062,74 @@ function resetLiveScoring() {
   document.getElementById('sc-b').textContent = '0';
 }
 
-function saveLiveMatch(finalize) {
-  const athId = parseInt(document.getElementById('live-athlete').value) || (athletes.length ? athletes[0].id : 1);
-  const ath = athletes.find(a => a.id === athId);
-  const w1 = document.getElementById('nm-r').value.trim() || (ath ? ath.name : 'Home');
-  const w2 = document.getElementById('nm-b').value.trim() || 'Opponent';
-  const ev = document.getElementById('live-event').value.trim() || 'Live Match';
-  const s1 = lScores.r;
-  const s2 = lScores.b;
-  const res = s1 >= s2 ? 'W' : 'L';
-  const wt = ath ? ath.weight + ' lbs' : '133 lbs';
-  const dt = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  const videoURL = liveVideoBlobURL || null;
-  matches.unshift({ w1, w2, wt, ev, dt, s1, s2, res, athId, videoURL, stats: {}, notes: '', bookmarks: [] });
-  saveData();
-  toast(videoURL ? 'Match + video saved!' : 'Match saved!');
+/* ── FINISH MODAL ── */
+function showFinishModal() {
+  const ytOpts = document.getElementById('finish-yt-opts');
+  if (ytOpts) ytOpts.style.display = liveVideoBlob ? 'block' : 'none';
+  const modal = document.getElementById('finish-modal');
+  if (modal) modal.classList.remove('hidden');
+}
 
-  // If a recording exists, offer YouTube upload (match is now at index 0)
-  if (liveVideoBlob) {
+function closeFinishModal() {
+  const modal = document.getElementById('finish-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function _buildLiveMatchData() {
+  const athId = parseInt(document.getElementById('live-athlete').value) || (athletes.length ? athletes[0].id : 1);
+  const ath   = athletes.find(a => a.id === athId);
+  return {
+    w1:    document.getElementById('nm-r').value.trim() || (ath ? ath.name : 'Home'),
+    w2:    document.getElementById('nm-b').value.trim() || 'Opponent',
+    ev:    document.getElementById('live-event').value.trim() || 'Live Match',
+    s1:    lScores.r,
+    s2:    lScores.b,
+    res:   lScores.r >= lScores.b ? 'W' : 'L',
+    wt:    ath ? ath.weight + ' lbs' : '133 lbs',
+    dt:    new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    athId: athId,
+  };
+}
+
+async function finishMatch(choice) {
+  closeFinishModal();
+  const d = _buildLiveMatchData();
+  const videoURL = liveVideoBlobURL || null;
+  matches.unshift({ ...d, videoURL, stats: {}, notes: '', bookmarks: [] });
+  saveData();
+
+  const wantsYT = (choice === 'youtube' || choice === 'both') && liveVideoBlob;
+
+  if (wantsYT) {
     pendingYtBlob     = liveVideoBlob;
     pendingYtMatchIdx = 0;
-    const ytArea = document.getElementById('yt-live-upload-area');
-    const ytBtn  = document.getElementById('yt-upload-btn');
-    const ytDone = document.getElementById('yt-upload-done');
-    if (ytArea) ytArea.style.display = 'block';
-    if (ytBtn)  { ytBtn.style.display = 'flex'; ytBtn.textContent = '▲ Save to YouTube'; ytBtn.disabled = false; }
-    if (ytDone) ytDone.style.display = 'none';
+    liveVideoBlobURL  = null;
+    closeCamera();
+    resetLiveScoring();
+    navTo('s-lib', null);
+    toast('Match saved! Connecting to YouTube…');
+    if (ytAccessToken) {
+      _doYouTubeUpload();
+    } else {
+      initYouTubeAuth(_doYouTubeUpload);
+    }
+    return;
   }
 
+  toast(videoURL ? 'Match + video saved!' : 'Match saved to library!');
+  liveVideoBlobURL = null;
+  closeCamera();
+  resetLiveScoring();
+  setTimeout(() => navTo('s-lib', null), 600);
+}
+
+/* kept for internal use (pin flow, etc.) */
+function saveLiveMatch(finalize) {
+  const d = _buildLiveMatchData();
+  const videoURL = liveVideoBlobURL || null;
+  matches.unshift({ ...d, videoURL, stats: {}, notes: '', bookmarks: [] });
+  saveData();
+  toast(videoURL ? 'Match + video saved!' : 'Match saved!');
   if (finalize) {
     liveVideoBlobURL = null;
     closeCamera();
@@ -1331,6 +1371,7 @@ Object.assign(window, {
   inc, dec, updateSummary, saveMatchStats, exportMatchStats, saveMatchNotes,
   openCamera, closeCamera, toggleCameraRecording, startCameraRecording, stopCameraRecording,
   liveScore, undoLastScore, saveLiveMatch, pinLiveMatch, setLivePeriod,
+  showFinishModal, closeFinishModal, finishMatch,
   renderRoster, setRosterFilter, openAddAthlete, openEditAthlete, saveAthlete, removeAthlete, closeModal,
   buildAthleteFilters, setLibFilter, filterLib, renderLib, openMatch, deleteMatch, resLabel,
   signIn, signUp, signInWithGoogle, signOut, resetPassword, handleAvatarClick,
