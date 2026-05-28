@@ -239,11 +239,12 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
 .pin-btn:hover,.pin-btn:active{background:var(--green);color:var(--black)}
 .period-bar{background:var(--black);padding:7px 13px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;border-bottom:1px solid var(--border);border-top:1px solid var(--border)}
 .period-lbl{font-family:var(--font-d);font-size:13px;font-weight:700;color:var(--green)}
-.live-camera-area{background:#000;height:190px;position:relative;flex-shrink:0;overflow:hidden}
-.live-camera-area video{width:100%;height:100%;object-fit:cover;display:block}
-.cam-open-wrap{background:var(--black);padding:7px 13px;flex-shrink:0;border-bottom:1px solid var(--border)}
-#cam-btn{width:100%;padding:9px;border-radius:var(--rs);border:1.5px solid var(--green);background:rgba(29,185,84,.1);color:var(--green);font-family:var(--font-d);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;-webkit-tap-highlight-color:transparent;transition:all .15s}
-#cam-btn:active{background:rgba(29,185,84,.25)}
+.live-cam-wrap{position:relative;width:100%;height:260px;flex-shrink:0;overflow:hidden;background:#000}
+#cam-placeholder{transition:opacity .2s}
+#cam-placeholder:active{opacity:.7}
+#rec-circle-btn:active{transform:scale(.94)}
+#rec-circle-btn.recording #rec-circle-inner{width:28px;height:28px;border-radius:6px}
+@keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,.5)}50%{box-shadow:0 0 0 10px rgba(231,76,60,0)}}
 
 /* ROSTER */
 .roster-item{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--border)}
@@ -317,7 +318,7 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
   .live-cols{display:flex;flex:1;min-width:0;overflow:hidden}
   .live-left{display:flex;flex-direction:column;width:340px;min-width:260px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;-webkit-overflow-scrolling:touch}
   .live-right{display:flex;flex-direction:column;flex:1;min-width:0;overflow:hidden}
-  .live-camera-area{height:210px}
+  .live-cam-wrap{height:240px}
   .live-score-bar .ls-score{font-size:46px}
   .lib-item{padding:13px 18px}
   .stat-cards-grid{padding:10px 14px}
@@ -344,10 +345,10 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
   </div>
   <div class="dsb-nav">
     <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);padding:6px 12px 4px">Menu</div>
-    <button class="dsb-item active" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Dashboard</button>
-    <button class="dsb-item" data-nav="live" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>Live Scoring</button>
+    <button class="dsb-item active" data-nav="live" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>Live Record</button>
     <button class="dsb-item" data-nav="lib" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h7"/></svg>Match Library</button>
     <button class="dsb-item" data-nav="roster" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Roster</button>
+    <button class="dsb-item" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Dashboard</button>
   </div>
   <div style="height:1px;background:var(--border);margin:4px 14px"></div>
   <div style="padding:4px 8px">
@@ -416,17 +417,17 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
   </div>
   <div class="scroll-area" id="dash-body"></div>
   <div class="bnav">
-    <button class="ni active" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
     <button class="ni" data-nav="live" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
     <button class="ni" data-nav="lib" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
     <button class="ni" data-nav="roster" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+    <button class="ni active" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
   </div>
 </div>
 
 <!-- ══ LIBRARY ══ -->
 <div class="screen" id="s-lib">
   <div class="hdr">
-    <button class="back-btn" onclick="go('s-home')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></button>
+    <button class="back-btn" onclick="go('s-live')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></button>
     <div class="hdr-title">Match Library</div>
     <!-- + button opens Upload & Score -->
     <button onclick="go('s-upload')" style="width:30px;height:30px;border-radius:50%;background:var(--green);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
@@ -452,10 +453,10 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
   </div>
   <div class="scroll-area" id="lib-list"></div>
   <div class="bnav">
-    <button class="ni" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
     <button class="ni" data-nav="live" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
-    <button class="ni active" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
+    <button class="ni active" data-nav="lib" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
     <button class="ni" data-nav="roster" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+    <button class="ni" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
   </div>
 </div>
 
@@ -604,30 +605,47 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
 <!-- ══ LIVE FILM & SCORE ══ -->
 <div class="screen" id="s-live">
   <div class="hdr">
-    <button class="back-btn" onclick="go('s-home')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></button>
-    <div class="hdr-title">Live Scoring</div>
-    <div id="rec-b" style="display:none;align-items:center;gap:4px;background:var(--green);border-radius:20px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--black)">
-      <div style="width:6px;height:6px;border-radius:50%;background:var(--black);animation:pulse 1s infinite"></div>LIVE
+    <div style="width:36px"></div>
+    <div class="hdr-title">Record &amp; Score</div>
+    <div id="rec-b" style="display:none;align-items:center;gap:4px;background:#E74C3C;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;color:#fff">
+      <div style="width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1s infinite"></div>REC
     </div>
   </div>
 
   <div class="live-cols">
   <div class="live-left">
-  <!-- Camera Preview (hidden until camera opens) -->
-  <div class="live-camera-area" id="cam-preview-area" style="display:none">
-    <video id="cam-preview-video" muted autoplay playsinline></video>
-    <div style="position:absolute;top:7px;right:7px;display:flex;gap:5px;z-index:2">
-      <button id="rec-toggle-btn" onclick="toggleCameraRecording()" style="padding:5px 12px;border-radius:20px;border:1.5px solid rgba(231,76,60,.5);background:rgba(231,76,60,.15);color:#F1948A;font-size:11px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent">⏺ REC</button>
-      <button onclick="closeCamera()" style="width:27px;height:27px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.6);color:white;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">✕</button>
-    </div>
-    <div id="rec-duration" style="display:none;position:absolute;bottom:7px;left:9px;font-size:12px;font-weight:700;color:#ff6b6b;text-shadow:0 1px 4px rgba(0,0,0,.9)">● 0:00</div>
-    <div id="rec-saved-badge" style="display:none;position:absolute;bottom:7px;right:9px;font-size:10px;font-weight:700;color:var(--green);background:rgba(0,0,0,.6);padding:2px 6px;border-radius:8px">✓ Video saved</div>
-  </div>
 
-  <!-- Open Camera button -->
-  <div class="cam-open-wrap">
-    <button id="cam-btn" onclick="openCamera()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>📹 Tap to Film &amp; Score Live</button>
-  </div>
+  <!-- ── CAMERA AREA ── -->
+  <div class="live-cam-wrap" id="live-cam-wrap">
+
+    <!-- Placeholder: tap to open camera -->
+    <div id="cam-placeholder" onclick="openCamera()" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;background:var(--black);z-index:1">
+      <div style="width:64px;height:64px;border-radius:50%;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      </div>
+      <span style="font-family:var(--font-d);font-size:14px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.5px">TAP TO OPEN CAMERA</span>
+    </div>
+
+    <!-- Live video feed -->
+    <video id="cam-preview-video" muted autoplay playsinline style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video>
+
+    <!-- Top-right controls: timer + close -->
+    <div id="cam-controls-top" style="display:none;position:absolute;top:10px;left:0;right:0;padding:0 12px;display:flex;justify-content:space-between;align-items:center;z-index:3">
+      <div id="rec-duration" style="font-size:13px;font-weight:800;color:#ff6b6b;text-shadow:0 1px 6px rgba(0,0,0,.9);letter-spacing:.5px">● 0:00</div>
+      <button onclick="closeCamera()" style="width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.55);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">✕</button>
+    </div>
+
+    <!-- Saved badge -->
+    <div id="rec-saved-badge" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:var(--green);background:rgba(0,0,0,.7);padding:3px 10px;border-radius:12px;z-index:3;white-space:nowrap">✓ Recording saved</div>
+
+    <!-- Big centered record button -->
+    <div id="rec-circle-wrap" style="display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:3">
+      <button id="rec-circle-btn" onclick="toggleCameraRecording()" style="width:72px;height:72px;border-radius:50%;border:4px solid rgba(255,255,255,.9);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:border-color .2s">
+        <div id="rec-circle-inner" style="width:52px;height:52px;border-radius:50%;background:#E74C3C;transition:all .2s ease"></div>
+      </button>
+    </div>
+
+  </div><!-- end live-cam-wrap -->
 
   <!-- Athlete + event selectors -->
   <div style="background:var(--black);border-bottom:1px solid var(--border);padding:8px 13px;display:flex;gap:8px;flex-shrink:0">
@@ -688,17 +706,17 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
       <button class="la-btn" style="grid-column:1/3;padding:11px;background:rgba(93,173,226,.12);color:#7EC8E3;border:1px solid rgba(93,173,226,.25)" onclick="pinLiveMatch('opp')">PIN — Opponent Wins</button>
     </div>
     <div style="padding:0 12px 14px">
-      <button class="btn-p" onclick="showFinishModal()" style="font-size:18px;letter-spacing:1px">FINISH</button>
+      <button class="btn-p" onclick="showFinishModal()" style="font-size:18px;letter-spacing:1px">FINALIZE</button>
     </div>
   </div>
   </div><!-- end live-right -->
   </div><!-- end live-cols -->
 
   <div class="bnav">
-    <button class="ni" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
     <button class="ni active" data-nav="live" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
     <button class="ni" data-nav="lib" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
     <button class="ni" data-nav="roster" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+    <button class="ni" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
   </div>
 </div>
 
@@ -757,7 +775,7 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
 <!-- ══ ROSTER ══ -->
 <div class="screen" id="s-roster">
   <div class="hdr">
-    <button class="back-btn" onclick="go('s-home')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></button>
+    <button class="back-btn" onclick="go('s-live')"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></button>
     <div class="hdr-title">Athlete Roster</div>
     <button onclick="openAddAthlete()" style="width:30px;height:30px;border-radius:50%;background:var(--green);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
   </div>
@@ -771,10 +789,10 @@ video.match-video{width:100%;max-height:220px;background:#000;display:block;obje
   </div>
   <div class="scroll-area" id="roster-list"></div>
   <div class="bnav">
-    <button class="ni" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
     <button class="ni" data-nav="live" onclick="navTo('s-live',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Live</span></button>
     <button class="ni" data-nav="lib" onclick="navTo('s-lib',this)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg><span>Library</span></button>
     <button class="ni active" data-nav="roster" onclick="navTo('s-roster',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Roster</span></button>
+    <button class="ni" data-nav="home" onclick="navTo('s-home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></button>
   </div>
 </div>
 
@@ -1766,8 +1784,8 @@ let wakeLock = null;
 
 async function openCamera() {
   if (mediaStream) return;
-  const btn = document.getElementById('cam-btn');
-  if (btn) { btn.innerHTML = '⏳ Opening camera…'; btn.disabled = true; }
+  const ph = document.getElementById('cam-placeholder');
+  if (ph) { ph.style.opacity = '.5'; ph.style.pointerEvents = 'none'; }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -1775,16 +1793,20 @@ async function openCamera() {
     });
     mediaStream = stream;
     const vid = document.getElementById('cam-preview-video');
-    if (vid) { vid.srcObject = stream; }
-    const area = document.getElementById('cam-preview-area');
-    if (area) area.style.display = 'block';
-    if (btn) btn.style.display = 'none';
+    if (vid) { vid.srcObject = stream; vid.style.display = 'block'; }
+    if (ph) ph.style.display = 'none';
+    // Show controls
+    const top = document.getElementById('cam-controls-top');
+    if (top) { top.style.display = 'flex'; }
+    const dur = document.getElementById('rec-duration');
+    if (dur) dur.style.display = 'none'; // hidden until recording starts
+    const circleWrap = document.getElementById('rec-circle-wrap');
+    if (circleWrap) circleWrap.style.display = 'block';
     try {
       if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
     } catch (e) {}
-    toast('Camera ready — tap ⏺ REC to start recording');
   } catch (err) {
-    if (btn) { btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>📹 Tap to Film & Score Live'; btn.disabled = false; }
+    if (ph) { ph.style.opacity = '1'; ph.style.pointerEvents = ''; }
     toast(err.name === 'NotAllowedError' ? 'Camera permission denied' : 'Could not access camera');
   }
 }
@@ -1794,25 +1816,29 @@ function closeCamera() {
   if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
   if (wakeLock) { try { wakeLock.release(); } catch(e){} wakeLock = null; }
   clearInterval(recTimerInterval); recTimerInterval = null; recSeconds = 0;
-  const area = document.getElementById('cam-preview-area');
-  if (area) area.style.display = 'none';
-  const btn = document.getElementById('cam-btn');
-  if (btn) { btn.style.display = 'flex'; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>📹 Tap to Film & Score Live'; btn.disabled = false; }
+  // Hide camera UI, show placeholder
+  const vid = document.getElementById('cam-preview-video');
+  if (vid) { vid.style.display = 'none'; vid.srcObject = null; }
+  const ph = document.getElementById('cam-placeholder');
+  if (ph) { ph.style.display = 'flex'; ph.style.opacity = '1'; ph.style.pointerEvents = ''; }
+  const top = document.getElementById('cam-controls-top');
+  if (top) top.style.display = 'none';
+  const circleWrap = document.getElementById('rec-circle-wrap');
+  if (circleWrap) circleWrap.style.display = 'none';
   liveVideoBlob = null;
-  const ytArea = document.getElementById('yt-live-upload-area');
-  if (ytArea) { ytArea.style.display = 'none'; }
-  const ytBtn = document.getElementById('yt-upload-btn');
-  if (ytBtn) { ytBtn.textContent = '▲ Save to YouTube'; ytBtn.disabled = false; }
-  const ytDone = document.getElementById('yt-upload-done');
-  if (ytDone) ytDone.style.display = 'none';
   _resetRecUI();
 }
 
 function _resetRecUI() {
-  const recBtn = document.getElementById('rec-toggle-btn');
-  if (recBtn) { recBtn.textContent = '⏺ REC'; recBtn.style.background = 'rgba(231,76,60,.15)'; recBtn.style.borderColor = 'rgba(231,76,60,.5)'; recBtn.style.color = '#F1948A'; }
+  // Reset record circle to idle state
+  const inner = document.getElementById('rec-circle-inner');
+  if (inner) { inner.style.width = '52px'; inner.style.height = '52px'; inner.style.borderRadius = '50%'; inner.style.animation = ''; }
+  const circleBtn = document.getElementById('rec-circle-btn');
+  if (circleBtn) circleBtn.classList.remove('recording');
   const dur = document.getElementById('rec-duration');
   if (dur) dur.style.display = 'none';
+  const badge = document.getElementById('rec-saved-badge');
+  if (badge) badge.style.display = 'none';
   const rb = document.getElementById('rec-b');
   if (rb) rb.style.display = 'none';
 }
@@ -1843,16 +1869,18 @@ function startCameraRecording() {
       liveVideoBlobURL = URL.createObjectURL(liveVideoBlob);
       const badge = document.getElementById('rec-saved-badge');
       if (badge) badge.style.display = 'block';
-      // Show YouTube upload button
-      const ytArea = document.getElementById('yt-live-upload-area');
-      if (ytArea) ytArea.style.display = 'block';
     }
   };
   mediaRecorder.start(1000);
-  const recBtn = document.getElementById('rec-toggle-btn');
-  if (recBtn) { recBtn.textContent = '⏹ STOP'; recBtn.style.background = '#c0392b'; recBtn.style.borderColor = '#c0392b'; recBtn.style.color = '#fff'; }
+  // Switch circle to stop state
+  const inner = document.getElementById('rec-circle-inner');
+  if (inner) { inner.style.width = '28px'; inner.style.height = '28px'; inner.style.borderRadius = '6px'; inner.style.animation = 'recPulse 1.5s infinite'; }
+  const circleBtn = document.getElementById('rec-circle-btn');
+  if (circleBtn) circleBtn.classList.add('recording');
+  // Show LIVE badge in header
   const rb = document.getElementById('rec-b');
   if (rb) rb.style.display = 'flex';
+  // Show timer
   const dur = document.getElementById('rec-duration');
   if (dur) { dur.style.display = 'block'; dur.textContent = '● 0:00'; }
   const badge = document.getElementById('rec-saved-badge');
@@ -1864,14 +1892,21 @@ function startCameraRecording() {
     const d = document.getElementById('rec-duration');
     if (d) d.textContent = '● ' + m + ':' + (s < 10 ? '0' : '') + s;
   }, 1000);
-  toast('● Recording — score below!');
 }
 
 function stopCameraRecording() {
   if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
   clearInterval(recTimerInterval); recTimerInterval = null;
-  _resetRecUI();
-  toast('Recording stopped — video attached to match');
+  // Reset circle to idle
+  const inner = document.getElementById('rec-circle-inner');
+  if (inner) { inner.style.width = '52px'; inner.style.height = '52px'; inner.style.borderRadius = '50%'; inner.style.animation = ''; }
+  const circleBtn = document.getElementById('rec-circle-btn');
+  if (circleBtn) circleBtn.classList.remove('recording');
+  const dur = document.getElementById('rec-duration');
+  if (dur) dur.style.display = 'none';
+  const rb = document.getElementById('rec-b');
+  if (rb) rb.style.display = 'none';
+  toast('Recording complete — tap FINALIZE to save');
 }
 
 /* ── LIVE SCORING ── */
@@ -2181,7 +2216,7 @@ if (typeof firebase !== 'undefined' && FIREBASE_CONFIGURED) {
       currentUserId = user.uid; // cache UID so getStorageKey() works immediately
       updateUserAvatar(user);
       initApp();
-      go('s-home');
+      go('s-live');
     } else {
       currentUserId = null;
       // Reset to defaults so stale data isn't visible behind login

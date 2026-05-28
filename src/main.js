@@ -928,8 +928,8 @@ let wakeLock = null;
 
 async function openCamera() {
   if (mediaStream) return;
-  const btn = document.getElementById('cam-btn');
-  if (btn) { btn.innerHTML = '⏳ Opening camera…'; btn.disabled = true; }
+  const ph = document.getElementById('cam-placeholder');
+  if (ph) { ph.style.opacity = '.5'; ph.style.pointerEvents = 'none'; }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -937,16 +937,19 @@ async function openCamera() {
     });
     mediaStream = stream;
     const vid = document.getElementById('cam-preview-video');
-    if (vid) { vid.srcObject = stream; }
-    const area = document.getElementById('cam-preview-area');
-    if (area) area.style.display = 'block';
-    if (btn) btn.style.display = 'none';
+    if (vid) { vid.srcObject = stream; vid.style.display = 'block'; }
+    if (ph) ph.style.display = 'none';
+    const top = document.getElementById('cam-controls-top');
+    if (top) top.style.display = 'flex';
+    const dur = document.getElementById('rec-duration');
+    if (dur) dur.style.display = 'none';
+    const circleWrap = document.getElementById('rec-circle-wrap');
+    if (circleWrap) circleWrap.style.display = 'block';
     try {
       if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
     } catch (e) {}
-    toast('Camera ready — tap ⏺ REC to start recording');
   } catch (err) {
-    if (btn) { btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>📹 Tap to Film & Score Live'; btn.disabled = false; }
+    if (ph) { ph.style.opacity = '1'; ph.style.pointerEvents = ''; }
     toast(err.name === 'NotAllowedError' ? 'Camera permission denied' : 'Could not access camera');
   }
 }
@@ -956,25 +959,27 @@ function closeCamera() {
   if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
   if (wakeLock) { try { wakeLock.release(); } catch(e){} wakeLock = null; }
   clearInterval(recTimerInterval); recTimerInterval = null; recSeconds = 0;
-  const area = document.getElementById('cam-preview-area');
-  if (area) area.style.display = 'none';
-  const btn = document.getElementById('cam-btn');
-  if (btn) { btn.style.display = 'flex'; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>📹 Tap to Film & Score Live'; btn.disabled = false; }
+  const vid = document.getElementById('cam-preview-video');
+  if (vid) { vid.style.display = 'none'; vid.srcObject = null; }
+  const ph = document.getElementById('cam-placeholder');
+  if (ph) { ph.style.display = 'flex'; ph.style.opacity = '1'; ph.style.pointerEvents = ''; }
+  const top = document.getElementById('cam-controls-top');
+  if (top) top.style.display = 'none';
+  const circleWrap = document.getElementById('rec-circle-wrap');
+  if (circleWrap) circleWrap.style.display = 'none';
   liveVideoBlob = null;
-  const ytArea = document.getElementById('yt-live-upload-area');
-  if (ytArea) { ytArea.style.display = 'none'; }
-  const ytBtn = document.getElementById('yt-upload-btn');
-  if (ytBtn) { ytBtn.textContent = '▲ Save to YouTube'; ytBtn.disabled = false; }
-  const ytDone = document.getElementById('yt-upload-done');
-  if (ytDone) ytDone.style.display = 'none';
   _resetRecUI();
 }
 
 function _resetRecUI() {
-  const recBtn = document.getElementById('rec-toggle-btn');
-  if (recBtn) { recBtn.textContent = '⏺ REC'; recBtn.style.background = 'rgba(231,76,60,.15)'; recBtn.style.borderColor = 'rgba(231,76,60,.5)'; recBtn.style.color = '#F1948A'; }
+  const inner = document.getElementById('rec-circle-inner');
+  if (inner) { inner.style.width = '52px'; inner.style.height = '52px'; inner.style.borderRadius = '50%'; inner.style.animation = ''; }
+  const circleBtn = document.getElementById('rec-circle-btn');
+  if (circleBtn) circleBtn.classList.remove('recording');
   const dur = document.getElementById('rec-duration');
   if (dur) dur.style.display = 'none';
+  const badge = document.getElementById('rec-saved-badge');
+  if (badge) badge.style.display = 'none';
   const rb = document.getElementById('rec-b');
   if (rb) rb.style.display = 'none';
 }
@@ -1005,14 +1010,13 @@ function startCameraRecording() {
       liveVideoBlobURL = URL.createObjectURL(liveVideoBlob);
       const badge = document.getElementById('rec-saved-badge');
       if (badge) badge.style.display = 'block';
-      // Show YouTube upload button
-      const ytArea = document.getElementById('yt-live-upload-area');
-      if (ytArea) ytArea.style.display = 'block';
     }
   };
   mediaRecorder.start(1000);
-  const recBtn = document.getElementById('rec-toggle-btn');
-  if (recBtn) { recBtn.textContent = '⏹ STOP'; recBtn.style.background = '#c0392b'; recBtn.style.borderColor = '#c0392b'; recBtn.style.color = '#fff'; }
+  const inner = document.getElementById('rec-circle-inner');
+  if (inner) { inner.style.width = '28px'; inner.style.height = '28px'; inner.style.borderRadius = '6px'; inner.style.animation = 'recPulse 1.5s infinite'; }
+  const circleBtn = document.getElementById('rec-circle-btn');
+  if (circleBtn) circleBtn.classList.add('recording');
   const rb = document.getElementById('rec-b');
   if (rb) rb.style.display = 'flex';
   const dur = document.getElementById('rec-duration');
@@ -1026,14 +1030,20 @@ function startCameraRecording() {
     const d = document.getElementById('rec-duration');
     if (d) d.textContent = '● ' + m + ':' + (s < 10 ? '0' : '') + s;
   }, 1000);
-  toast('● Recording — score below!');
 }
 
 function stopCameraRecording() {
   if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
   clearInterval(recTimerInterval); recTimerInterval = null;
-  _resetRecUI();
-  toast('Recording stopped — video attached to match');
+  const inner = document.getElementById('rec-circle-inner');
+  if (inner) { inner.style.width = '52px'; inner.style.height = '52px'; inner.style.borderRadius = '50%'; inner.style.animation = ''; }
+  const circleBtn = document.getElementById('rec-circle-btn');
+  if (circleBtn) circleBtn.classList.remove('recording');
+  const dur = document.getElementById('rec-duration');
+  if (dur) dur.style.display = 'none';
+  const rb = document.getElementById('rec-b');
+  if (rb) rb.style.display = 'none';
+  toast('Recording complete — tap FINALIZE to save');
 }
 
 /* ── LIVE SCORING ── */
@@ -1348,7 +1358,7 @@ if (typeof firebase !== 'undefined' && FIREBASE_CONFIGURED) {
       currentUserId = user.uid; // cache UID so getStorageKey() works immediately
       updateUserAvatar(user);
       initApp();
-      go('s-home');
+      go('s-live');
     } else {
       currentUserId = null;
       // Reset to defaults so stale data isn't visible behind login
