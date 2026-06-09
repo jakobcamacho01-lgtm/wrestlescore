@@ -311,6 +311,7 @@ let vidInterval = null;
 let simTotal = 306;
 let simCur = 0;
 let useRealVideo = false;
+let _overlayTimer = null;
 
 function fmt(s) {
   s = Math.floor(s);
@@ -331,11 +332,35 @@ function updateProgress() {
   if (tt) tt.textContent = fmt(dur || 0);
 }
 
+function flashOverlay() {
+  const ov = document.getElementById('vid-overlay');
+  if (!ov) return;
+  ov.classList.add('show');
+  clearTimeout(_overlayTimer);
+  // Only auto-hide when actually playing
+  const isPlaying = playing ||
+    (useYouTube && ytPlayer && typeof ytPlayer.getPlayerState === 'function' &&
+     ytPlayer.getPlayerState() === YT.PlayerState.PLAYING);
+  if (isPlaying) {
+    _overlayTimer = setTimeout(() => ov.classList.remove('show'), 3000);
+  }
+}
+function _hideOverlay() {
+  const ov = document.getElementById('vid-overlay');
+  if (ov) ov.classList.remove('show');
+  clearTimeout(_overlayTimer);
+}
+
 function togglePlay() {
   const vs = document.getElementById('video-section');
   if (useYouTube && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
-    if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
-    else ytPlayer.playVideo();
+    if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+      ytPlayer.pauseVideo();
+    } else {
+      ytPlayer.playVideo();
+      // auto-hide after 3s once playing
+      setTimeout(() => _hideOverlay(), 3000);
+    }
     return;
   }
   if (useRealVideo && currentVideoEl) {
@@ -343,10 +368,12 @@ function togglePlay() {
       currentVideoEl.play();
       playing = true;
       vs.classList.remove('paused');
+      _overlayTimer = setTimeout(() => _hideOverlay(), 3000);
     } else {
       currentVideoEl.pause();
       playing = false;
       vs.classList.add('paused');
+      clearTimeout(_overlayTimer);
     }
     const icon = document.getElementById('play-icon');
     if (icon) icon.innerHTML = currentVideoEl.paused ? '<path d="M8 5v14l11-7z"/>' : '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
@@ -356,6 +383,7 @@ function togglePlay() {
     if (playing) {
       vs.classList.remove('paused');
       if (icon) icon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+      _overlayTimer = setTimeout(() => _hideOverlay(), 3000);
       vidInterval = setInterval(() => {
         if (simCur < simTotal) { simCur++; updateProgress(); }
         else { playing = false; clearInterval(vidInterval); vs.classList.add('paused'); }
@@ -363,7 +391,7 @@ function togglePlay() {
     } else {
       vs.classList.add('paused');
       if (icon) icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
-      clearInterval(vidInterval);
+      clearTimeout(_overlayTimer);
     }
   }
 }
@@ -402,26 +430,53 @@ function jumpTo(s) {
   toast('Jumped to ' + fmt(s));
 }
 
+function _makeClipItem(bm, bmIdx, col) {
+  const t = fmt(bm.s);
+  const item = document.createElement('div');
+  item.className = 'bookmark-item';
+  item.style.cssText = 'display:flex;align-items:center;gap:9px';
+  item.innerHTML = `
+    <div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${bm.label || 'Clip at ' + t}</div>
+      <div style="font-size:10px;color:var(--text-muted)">${t}</div>
+    </div>
+    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="var(--text-muted)" stroke-width="2" style="flex-shrink:0"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    <button onclick="event.stopPropagation();deleteClip(${bmIdx})" style="width:22px;height:22px;border-radius:50%;border:1px solid rgba(231,76,60,.4);background:rgba(231,76,60,.1);color:#E74C3C;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1" title="Delete clip">×</button>`;
+  item.onclick = () => jumpTo(bm.s);
+  return item;
+}
+
 function addBookmark() {
   const cur = (useYouTube && ytPlayer && typeof ytPlayer.getCurrentTime === 'function')
     ? Math.floor(ytPlayer.getCurrentTime())
     : (useRealVideo && currentVideoEl ? Math.floor(currentVideoEl.currentTime) : simCur);
   const t = fmt(cur);
-  const s = cur;
-  const list = document.getElementById('clips-list');
-  const cols = ['var(--green)', 'var(--blue)', 'var(--gold)', 'var(--red)'];
-  const col = cols[list.children.length % cols.length];
-  const item = document.createElement('div');
-  item.className = 'bookmark-item';
-  item.innerHTML = `<div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">Bookmark at ${t}</div><div style="font-size:10px;color:var(--text-muted)">${t}</div></div><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="var(--text-muted)" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
-  item.onclick = () => jumpTo(s);
-  list.appendChild(item);
+  const bm = { s: cur, label: 'Clip at ' + t };
   if (currentMatchIdx >= 0 && currentMatchIdx < matches.length) {
     if (!matches[currentMatchIdx].bookmarks) matches[currentMatchIdx].bookmarks = [];
-    matches[currentMatchIdx].bookmarks.push({ s, label: 'Bookmark at ' + t });
+    matches[currentMatchIdx].bookmarks.push(bm);
     saveData();
+    // Re-render the full clips list so indices are correct
+    const list = document.getElementById('clips-list');
+    const cols = ['var(--green)', 'var(--blue)', 'var(--gold)', 'var(--red)'];
+    list.innerHTML = '';
+    matches[currentMatchIdx].bookmarks.forEach((b, i) => list.appendChild(_makeClipItem(b, i, cols[i % cols.length])));
   }
-  toast('Bookmark at ' + t);
+  toast('Clip saved at ' + t);
+}
+
+function deleteClip(bmIdx) {
+  if (currentMatchIdx < 0 || currentMatchIdx >= matches.length) return;
+  if (!confirm('Delete this clip?')) return;
+  matches[currentMatchIdx].bookmarks.splice(bmIdx, 1);
+  saveData();
+  // Re-render
+  const list = document.getElementById('clips-list');
+  const cols = ['var(--green)', 'var(--blue)', 'var(--gold)', 'var(--red)'];
+  list.innerHTML = '';
+  matches[currentMatchIdx].bookmarks.forEach((b, i) => list.appendChild(_makeClipItem(b, i, cols[i % cols.length])));
+  toast('Clip deleted');
 }
 
 function loadMatchVideo(m) {
@@ -524,8 +579,17 @@ function buildDashTabs() {
 function renderDash() {
   const a = athletes.find(x => x.id === currentAthId);
   if (!a) return;
-  const n = a.neutral, b = a.bottom, t = a.top, r = a.record, c = a.color;
-  const total = r.w + r.l, wp = total ? Math.round(r.w / total * 100) : 0;
+  const n = a.neutral, b = a.bottom, t = a.top, c = a.color;
+
+  // Compute W/L record and streak from actual saved match history
+  const athMatches = matches.filter(m => m.athId === a.id);
+  const wins   = athMatches.filter(m => m.res === 'W' || m.res === 'F').length;
+  const losses = athMatches.filter(m => m.res === 'L').length;
+  const total  = athMatches.length;
+  const wp     = total ? Math.round(wins / total * 100) : 0;
+  const streakArr = athMatches.slice(0, 8).reverse()
+    .map(m => (m.res === 'W' || m.res === 'F') ? 'W' : (m.res === 'L' ? 'L' : 'D'));
+  const r = { w: wins, l: losses, streak: streakArr };
   const oA = n.sl.att + n.hc.att + n.dl.att + n.oth.att + n.fhl.att;
   const oS = n.sl.sc + n.hc.sc + n.dl.sc + n.oth.sc + n.fhl.sc;
   const ppA = n.opp.sl.att + n.opp.hc.att + n.opp.dl.att + n.opp.oth.att + n.opp.fhl.att;
@@ -828,16 +892,7 @@ function loadBookmarksFromMatch(m) {
   list.innerHTML = '';
   const bookmarks = m.bookmarks || [];
   const cols = ['var(--green)', 'var(--blue)', 'var(--gold)', 'var(--red)'];
-  bookmarks.forEach((bm, i) => {
-    const col = cols[i % cols.length];
-    const t = fmt(bm.s);
-    const s = bm.s;
-    const item = document.createElement('div');
-    item.className = 'bookmark-item';
-    item.innerHTML = `<div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--white)">${bm.label || 'Bookmark at ' + t}</div><div style="font-size:10px;color:var(--text-muted)">${t}</div></div><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="var(--text-muted)" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
-    item.onclick = () => jumpTo(s);
-    list.appendChild(item);
-  });
+  bookmarks.forEach((bm, i) => list.appendChild(_makeClipItem(bm, i, cols[i % cols.length])));
 }
 
 function inc(key) {
@@ -1376,8 +1431,7 @@ if (typeof firebase !== 'undefined' && FIREBASE_CONFIGURED) {
 Object.assign(window, {
   go, navTo, switchTab, showTab,
   handleVideoUpload, saveUploadedMatch, clearUploadedVideo,
-  setUploadMode, parseYouTubeId, uploadLiveToYouTube,
-  togglePlay, seekRel, seekTo, jumpTo, addBookmark, toggleFullscreen,
+  togglePlay, seekRel, seekTo, jumpTo, addBookmark, deleteClip, flashOverlay, toggleFullscreen,
   inc, dec, updateSummary, saveMatchStats, exportMatchStats, saveMatchNotes,
   openCamera, closeCamera, toggleCameraRecording, startCameraRecording, stopCameraRecording,
   liveScore, undoLastScore, saveLiveMatch, pinLiveMatch, setLivePeriod,
